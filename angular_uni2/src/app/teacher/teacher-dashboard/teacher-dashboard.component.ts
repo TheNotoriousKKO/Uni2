@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -11,730 +11,652 @@ import { UserService, UserDto } from '../../core/user.service';
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule],
   template: `
-    <div class="dashboard-container">
-      <header class="dashboard-header">
-        <h1>Teacher Dashboard</h1>
-        <div class="user-info">
-          <span>Welcome, {{ currentUser?.firstName }} {{ currentUser?.lastName }} (ID: {{ currentUser?.id }})</span>
-          <button (click)="logout()" class="btn btn-secondary">Logout</button>
-        </div>
-      </header>
-      
-      <main class="dashboard-content">
-        <div class="dashboard-grid">
-          <!-- Create Subject Form -->
-          <div class="dashboard-card">
-            <h2>Create New Subject</h2>
-            <form [formGroup]="subjectForm" (ngSubmit)="createSubject()">
-              <div class="form-group">
-                <label for="subjectName">Subject Name</label>
-                <input 
-                  type="text" 
-                  id="subjectName" 
-                  formControlName="name" 
-                  class="form-control"
-                  [class.error]="isFieldInvalid('name')"
-                  placeholder="Enter subject name"
-                >
-                <div class="error-message" *ngIf="isFieldInvalid('name')">
-                  Subject name is required
-                </div>
-              </div>
-
-              <div class="form-group">
-                <label for="subjectCode">Subject Code</label>
-                <input 
-                  type="text" 
-                  id="subjectCode" 
-                  formControlName="code" 
-                  class="form-control"
-                  [class.error]="isFieldInvalid('code')"
-                  placeholder="Enter subject code (e.g., MATH101)"
-                >
-                <div class="error-message" *ngIf="isFieldInvalid('code')">
-                  Subject code is required
-                </div>
-              </div>
-
-              <div class="error-message" *ngIf="subjectError">
-                {{ subjectError }}
-              </div>
-
-              <div class="success-message" *ngIf="subjectSuccess">
-                {{ subjectSuccess }}
-              </div>
-
-              <button 
-                type="submit" 
-                class="btn btn-primary" 
-                [disabled]="subjectForm.invalid || isCreatingSubject"
-              >
-                {{ isCreatingSubject ? 'Creating...' : 'Create Subject' }}
-              </button>
-            </form>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    
+    <!-- TOP ROW: Create Subject (70%) + Digital Clock (30%) -->
+    <div class="top-row">
+      <div class="create-subject-card">
+        <h2>Create Subject</h2>
+        <form [formGroup]="subjectForm" (ngSubmit)="createSubject()">
+          <div class="form-group">
+            <label for="name">Subject Name</label>
+            <input type="text" id="name" formControlName="name" [class.error]="isFieldInvalid('name')" placeholder="e.g., Introduction to AI">
           </div>
-
-          <!-- Assign Grade Form -->
-          <div class="dashboard-card">
-            <h2>Assign Grade</h2>
-            <form [formGroup]="gradeForm" (ngSubmit)="assignGrade()">
-              <div class="form-group">
-                <label for="studentId">Student ID</label>
-                <input 
-                  type="number" 
-                  id="studentId" 
-                  formControlName="studentId" 
-                  class="form-control"
-                  [class.error]="isFieldInvalid('studentId')"
-                  placeholder="Enter student ID"
-                >
-                <div class="error-message" *ngIf="isFieldInvalid('studentId')">
-                  Student ID is required
-                </div>
-              </div>
-
-              <div class="form-group">
-                <label for="subjectId">Subject ID</label>
-                <input 
-                  type="number" 
-                  id="subjectId" 
-                  formControlName="subjectId" 
-                  class="form-control"
-                  [class.error]="isFieldInvalid('subjectId')"
-                  placeholder="Enter subject ID"
-                >
-                <div class="error-message" *ngIf="isFieldInvalid('subjectId')">
-                  Subject ID is required
-                </div>
-              </div>
-
-              <div class="form-group">
-                <label for="gradeValue">Grade Value</label>
-                <input 
-                  type="number" 
-                  id="gradeValue" 
-                  formControlName="value" 
-                  class="form-control"
-                  [class.error]="isFieldInvalid('value')"
-                  placeholder="Enter grade (1.0 - 6.0)"
-                  step="0.1"
-                  min="1.0"
-                  max="6.0"
-                >
-                <div class="error-message" *ngIf="isFieldInvalid('value')">
-                  Grade must be between 1.0 and 6.0
-                </div>
-              </div>
-
-              <div class="error-message" *ngIf="gradeError">
-                {{ gradeError }}
-              </div>
-
-              <div class="success-message" *ngIf="gradeSuccess">
-                {{ gradeSuccess }}
-              </div>
-
-              <button 
-                type="submit" 
-                class="btn btn-primary" 
-                [disabled]="gradeForm.invalid || isAssigningGrade"
-              >
-                {{ isAssigningGrade ? 'Assigning...' : 'Assign Grade' }}
-              </button>
-            </form>
+          <div class="form-group">
+            <label for="code">Subject Code</label>
+            <input type="text" id="code" formControlName="code" [class.error]="isFieldInvalid('code')" placeholder="e.g., CS101">
           </div>
+          <div class="message error" *ngIf="createSubjectError">{{ createSubjectError }}</div>
+          <div class="message success" *ngIf="createSubjectSuccess">{{ createSubjectSuccess }}</div>
+          <button type="submit" class="btn btn-primary" [disabled]="subjectForm.invalid || isCreatingSubject">
+            {{ isCreatingSubject ? 'Creating...' : 'Create Subject' }}
+          </button>
+        </form>
+      </div>
+      <div class="clock-card">
+        <div class="clock-content">
+          <div class="clock-date">{{ currentDate }}</div>
+          <div class="clock-time">{{ currentTime }}</div>
+          <div class="clock-label">Local Time</div>
         </div>
+      </div>
+    </div>
 
-        <!-- Subject Search and Enrollment Management -->
-        <div class="dashboard-card enrollment-card">
-          <h2>Student Enrollment Management</h2>
-          
-          <!-- Subject Search -->
-          <div class="search-section">
-            <h3>Search Subjects</h3>
-            <form [formGroup]="searchForm" (ngSubmit)="searchSubjects()">
-              <div class="search-inputs">
-                <div class="form-group">
-                  <label for="searchSubjectId">Subject ID</label>
-                  <input 
-                    type="number" 
-                    id="searchSubjectId" 
-                    formControlName="subjectId" 
-                    class="form-control"
-                    placeholder="Enter subject ID"
-                  >
-                </div>
-                <div class="form-group">
-                  <label for="searchSubjectCode">Subject Code</label>
-                  <input 
-                    type="text" 
-                    id="searchSubjectCode" 
-                    formControlName="subjectCode" 
-                    class="form-control"
-                    placeholder="Enter subject code"
-                  >
-                </div>
-                <div class="form-group">
-                  <label for="searchSubjectName">Subject Name</label>
-                  <input 
-                    type="text" 
-                    id="searchSubjectName" 
-                    formControlName="subjectName" 
-                    class="form-control"
-                    placeholder="Enter subject name (partial match)"
-                  >
-                </div>
-                <button type="submit" class="btn btn-primary" [disabled]="isSearching">
-                  {{ isSearching ? 'Searching...' : 'Search' }}
+    <!-- HEADER (Welcome) -->
+    <header class="dashboard-header">
+      <span class="welcome-text">Welcome, Professor {{ currentUser?.lastName }} (ID: {{ currentUser?.id }})</span>
+      <button (click)="logout()" class="btn btn-secondary">Logout</button>
+    </header>
+
+    <!-- BOTTOM ROW: Subject Browser | Student Browser -->
+    <div class="bottom-row">
+      <!-- Subject Browser -->
+      <div class="panel subject-browser">
+        <h2>Subject Browser</h2>
+        <form [formGroup]="searchForm" (ngSubmit)="searchSubjects()" class="subject-search-form">
+          <div class="search-fields">
+            <div class="form-group">
+              <label for="searchSubjectId">Subject ID</label>
+              <input type="number" id="searchSubjectId" formControlName="id" placeholder="ID">
+            </div>
+            <div class="form-group">
+              <label for="searchSubjectCode">Subject Code</label>
+              <input type="text" id="searchSubjectCode" formControlName="code" placeholder="Code">
+            </div>
+            <div class="form-group">
+              <label for="searchSubjectName">Subject Name</label>
+              <input type="text" id="searchSubjectName" formControlName="name" placeholder="Name">
+            </div>
+            <button type="submit" class="btn btn-primary" [disabled]="isSearching">
+              {{ isSearching ? 'Searching...' : 'Search' }}
+            </button>
+          </div>
+        </form>
+        <div class="results-section" *ngIf="searchResults.length > 0">
+          <table>
+            <thead>
+              <tr>
+                <th>Code</th>
+                <th>Name</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let subject of searchResults">
+                <td>{{ subject.code }}</td>
+                <td>{{ subject.name }}</td>
+                <td>
+                  <button (click)="selectSubject(subject)" class="btn btn-secondary">Select</button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="selected-subject" *ngIf="selectedSubject">
+          <h3>{{ selectedSubject.name }} ({{ selectedSubject.code }})</h3>
+          <div class="enrolled-students">
+            <table>
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Name</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let student of enrolledStudents">
+                  <td>{{ student.id }}</td>
+                  <td>{{ student.firstName }} {{ student.lastName }}</td>
+                  <td>
+                    <button (click)="removeStudent(student.id)" class="btn btn-danger" [disabled]="isRemovingStudent === student.id">
+                      {{ isRemovingStudent === student.id ? 'Removing...' : 'Remove' }}
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <form [formGroup]="enrollForm" (ngSubmit)="enrollStudent()" class="enroll-form">
+            <div class="form-group">
+              <label for="enrollStudentId">Enroll Student by ID</label>
+              <div class="input-with-button">
+                <input type="number" id="enrollStudentId" formControlName="studentId" placeholder="Enter student ID">
+                <button type="submit" class="btn btn-primary" [disabled]="enrollForm.invalid || isEnrolling">
+                  {{ isEnrolling ? 'Enrolling...' : 'Enroll' }}
                 </button>
               </div>
-            </form>
+            </div>
+          </form>
+        </div>
+      </div>
+      <!-- Student Browser -->
+      <div class="panel student-browser">
+        <h2>Student Browser</h2>
+        <form [formGroup]="studentSearchForm" (ngSubmit)="searchStudents()" class="student-search-form">
+          <div class="search-fields">
+            <div class="form-group">
+              <label for="searchStudentId">Student ID</label>
+              <input type="number" id="searchStudentId" formControlName="id" placeholder="ID">
+            </div>
+            <div class="form-group">
+              <label for="searchStudentFirstName">First Name</label>
+              <input type="text" id="searchStudentFirstName" formControlName="firstName" placeholder="First name">
+            </div>
+            <div class="form-group">
+              <label for="searchStudentLastName">Last Name</label>
+              <input type="text" id="searchStudentLastName" formControlName="lastName" placeholder="Last name">
+            </div>
+            <button type="submit" class="btn btn-primary" [disabled]="isSearchingStudents">
+              {{ isSearchingStudents ? 'Searching...' : 'Search' }}
+            </button>
           </div>
-
-          <!-- Search Results -->
-          <div class="search-results" *ngIf="searchResults.length > 0">
-            <h3>Search Results</h3>
-            <div class="table-container">
-              <table class="data-table">
-                <thead>
-                  <tr>
-                    <th>ID</th>
-                    <th>Code</th>
-                    <th>Name</th>
-                    <th>Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr *ngFor="let subject of searchResults">
-                    <td>{{ subject.id }}</td>
-                    <td>{{ subject.code }}</td>
-                    <td>{{ subject.name }}</td>
-                    <td>
-                      <button (click)="selectSubject(subject)" class="btn btn-secondary btn-sm">
-                        Select
-                      </button>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
+        </form>
+        <div class="results-section" *ngIf="studentSearchResults.length > 0">
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let student of studentSearchResults">
+                <td>{{ student.id }}</td>
+                <td>{{ student.firstName }} {{ student.lastName }}</td>
+                <td>
+                  <button (click)="selectStudent(student)" class="btn btn-secondary">Select</button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="selected-student" *ngIf="selectedStudent">
+          <div class="student-info">
+            <h3>{{ selectedStudent.firstName }} {{ selectedStudent.lastName }}</h3>
+            <p class="student-id">ID: {{ selectedStudent.id }}</p>
+            <p class="average-grade" *ngIf="selectedStudentGrades.length > 0">
+              Average Grade: {{ calculateAverageGrade() | number:'1.2-2' }}
+            </p>
+            <p class="no-grades" *ngIf="selectedStudentGrades.length === 0">
+              No grades assigned yet
+            </p>
           </div>
-
-          <!-- Selected Subject and Student Management -->
-          <div class="selected-subject" *ngIf="selectedSubject">
-            <h3>Managing: {{ selectedSubject.name }} ({{ selectedSubject.code }})</h3>
-            
-            <!-- Enroll Student Form -->
-            <div class="enroll-section">
-              <h4>Enroll New Student</h4>
-              <form [formGroup]="enrollForm" (ngSubmit)="enrollStudent()">
-                <div class="enroll-inputs">
-                  <div class="form-group">
-                    <label for="enrollStudentId">Student ID</label>
-                    <input 
-                      type="number" 
-                      id="enrollStudentId" 
-                      formControlName="studentId" 
-                      class="form-control"
-                      [class.error]="isFieldInvalid('enrollStudentId')"
-                      placeholder="Enter student ID"
-                    >
-                    <div class="error-message" *ngIf="isFieldInvalid('enrollStudentId')">
-                      Student ID is required
-                    </div>
-                  </div>
-                  <button type="submit" class="btn btn-primary" [disabled]="enrollForm.invalid || isEnrolling">
-                    {{ isEnrolling ? 'Enrolling...' : 'Enroll' }}
-                  </button>
-                </div>
-              </form>
-            </div>
-
-            <!-- Enrolled Students List -->
-            <div class="enrolled-students">
-              <h4>Enrolled Students</h4>
-              <div class="loading-container" *ngIf="isLoadingStudents">
-                <div class="loading-spinner"></div>
-                <p>Loading students...</p>
-              </div>
-              
-              <div class="table-container" *ngIf="!isLoadingStudents">
-                <table class="data-table" *ngIf="enrolledStudents.length > 0">
-                  <thead>
-                    <tr>
-                      <th>ID</th>
-                      <th>Name</th>
-                      <th>Username</th>
-                      <th>Action</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr *ngFor="let student of enrolledStudents">
-                      <td>{{ student.id }}</td>
-                      <td>{{ student.firstName }} {{ student.lastName }}</td>
-                      <td>{{ student.username }}</td>
-                      <td>
-                        <button (click)="removeStudent(student.id)" class="btn btn-danger btn-sm" [disabled]="isRemovingStudent === student.id">
-                          {{ isRemovingStudent === student.id ? 'Removing...' : 'Remove' }}
-                        </button>
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-                <div class="empty-state" *ngIf="enrolledStudents.length === 0">
-                  <p>No students enrolled in this subject.</p>
-                </div>
-              </div>
-            </div>
-
-            <div class="error-message" *ngIf="enrollmentError">
-              {{ enrollmentError }}
-            </div>
-
-            <div class="success-message" *ngIf="enrollmentSuccess">
-              {{ enrollmentSuccess }}
-            </div>
+          <div class="student-subjects">
+            <h4>Enrolled Subjects</h4>
+            <table>
+              <thead>
+                <tr>
+                  <th>Subject</th>
+                  <th>Grade</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let subject of selectedStudentSubjects">
+                  <td>{{ subject.name }}</td>
+                  <td>
+                    {{ getStudentGrade(subject.id) || 'No grade' }}
+                  </td>
+                  <td>
+                    <button 
+                      *ngIf="!hasGrade(subject.id)"
+                      (click)="openGradeAssignment(subject.id)"
+                      class="btn btn-secondary">
+                      Assign Grade
+                    </button>
+                    <button 
+                      *ngIf="hasGrade(subject.id)"
+                      (click)="deleteGrade(getGradeId(subject.id))"
+                      class="btn btn-danger"
+                      [disabled]="isDeletingGrade === getGradeId(subject.id)">
+                      {{ isDeletingGrade === getGradeId(subject.id) ? 'Deleting...' : 'Delete Grade' }}
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         </div>
+      </div>
+    </div>
 
-        <!-- Instructions Card -->
-        <div class="dashboard-card instructions-card">
-          <h2>Instructions</h2>
-          <div class="instructions-content">
-            <div class="instruction-section">
-              <h3>Creating Subjects</h3>
-              <ul>
-                <li>Enter a descriptive subject name</li>
-                <li>Use a unique subject code (e.g., MATH101, CS201)</li>
-                <li>You will be automatically assigned as the teacher</li>
-              </ul>
-            </div>
-            <div class="instruction-section">
-              <h3>Assigning Grades</h3>
-              <ul>
-                <li>Enter the student's ID number</li>
-                <li>Enter the subject ID you want to grade</li>
-                <li>Grade values range from 1.0 to 6.0</li>
-                <li>Students must be enrolled in the subject to receive grades</li>
-              </ul>
-            </div>
-            <div class="instruction-section">
-              <h3>Managing Enrollment</h3>
-              <ul>
-                <li>Search for subjects by ID, code, or name</li>
-                <li>Name search supports partial matching (e.g., "math" finds "Advanced Mathematics")</li>
-                <li>Select a subject to manage its enrollment</li>
-                <li>Enroll students by entering their ID</li>
-                <li>Remove students using the Remove button</li>
-              </ul>
+    <!-- Grade Assignment Dialog -->
+    <div class="dialog-overlay" *ngIf="showGradeDialog" (click)="closeGradeDialog()">
+      <div class="dialog" (click)="$event.stopPropagation()">
+        <h3>Assign Grade</h3>
+        <form [formGroup]="gradeForm" (ngSubmit)="submitGrade()">
+          <div class="form-group">
+            <label for="grade">Grade (1.0 - 6.0)</label>
+            <input 
+              type="number" 
+              id="grade" 
+              formControlName="grade"
+              min="1.0"
+              max="6.0"
+              step="0.1"
+              [class.error]="gradeForm.get('grade')?.invalid && gradeForm.get('grade')?.touched"
+            >
+            <div class="message error" *ngIf="gradeForm.get('grade')?.invalid && gradeForm.get('grade')?.touched">
+              Grade must be between 1.0 and 6.0
             </div>
           </div>
-        </div>
-      </main>
+          <div class="dialog-actions">
+            <button type="button" class="btn btn-secondary" (click)="closeGradeDialog()">Cancel</button>
+            <button type="submit" class="btn btn-primary" [disabled]="gradeForm.invalid || isAssigningGrade">
+              {{ isAssigningGrade ? 'Assigning...' : 'Assign Grade' }}
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   `,
   styles: [`
-    .dashboard-container {
+    :host {
+      font-family: 'Inter', 'Open Sans', sans-serif;
+      color: #2e3d2c;
+      font-size: 16px;
+      background-color: #f3f7f3;
       min-height: 100vh;
-      background-color: #f8f9fa;
+      display: block;
     }
-
+    .top-row {
+      display: flex;
+      gap: 2rem;
+      align-items: stretch;
+      max-width: 1200px;
+      margin: 2rem auto 0 auto;
+    }
+    .create-subject-card {
+      flex: 0 1 70%;
+      background: #f9f9f6;
+      border-radius: 10px;
+      box-shadow: 0 2px 8px rgba(46, 125, 50, 0.07);
+      padding: 2rem 2rem 1.5rem 2rem;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+    }
+    .clock-card {
+      flex: 1 1 0;
+      background: #f9f9f6;
+      border-radius: 10px;
+      box-shadow: 0 2px 8px rgba(46, 125, 50, 0.07);
+      padding: 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 220px;
+    }
+    .clock-content {
+      text-align: center;
+      width: 100%;
+    }
+    .clock-date {
+      font-size: 1.1rem;
+      color: #61876E;
+      margin-bottom: 1rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .clock-time {
+      font-size: 2.8rem;
+      font-family: 'Inter', monospace;
+      color: #2e7d32;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      margin-bottom: 0.5rem;
+      line-height: 1.2;
+    }
+    .clock-label {
+      font-size: 0.9rem;
+      color: #61876E;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+    }
     .dashboard-header {
-      background: white;
-      padding: 1rem 2rem;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      max-width: 1200px;
+      margin: 1.5rem auto 2rem auto;
       display: flex;
       justify-content: space-between;
       align-items: center;
+      padding: 1.5rem 2rem;
+      background: #e0ede0;
+      border-radius: 10px;
+      box-shadow: 0 2px 8px rgba(46, 125, 50, 0.04);
+      border-bottom: 1px solid #e0e0e0;
+      color: #2e7d32;
     }
-
-    .dashboard-header h1 {
-      margin: 0;
-      color: #333;
+    .welcome-text {
+      font-size: 1.1rem;
+      font-weight: 500;
     }
-
-    .user-info {
+    .bottom-row {
       display: flex;
-      align-items: center;
-      gap: 1rem;
-    }
-
-    .user-info span {
-      color: #666;
-    }
-
-    .dashboard-content {
-      padding: 2rem;
-    }
-
-    .dashboard-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
       gap: 2rem;
+      align-items: flex-start;
       max-width: 1200px;
       margin: 0 auto 2rem auto;
     }
-
-    .dashboard-card {
-      background: white;
-      padding: 2rem;
-      border-radius: 8px;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    .panel {
+      background: #f9f9f6;
+      border-radius: 10px;
+      box-shadow: 0 2px 8px rgba(46, 125, 50, 0.07);
+      padding: 2rem 2rem 1.5rem 2rem;
+      flex: 1 1 0;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
     }
-
-    .enrollment-card {
-      max-width: 1200px;
-      margin: 0 auto 2rem auto;
-    }
-
-    .dashboard-card h2 {
-      color: #333;
+    h2 {
+      font-size: 1.25rem;
+      font-weight: 600;
       margin-bottom: 1.5rem;
-      padding-bottom: 0.5rem;
-      border-bottom: 2px solid #f8f9fa;
+      color: #2e7d32;
     }
-
-    .form-group {
+    h3 {
+      font-size: 1.1rem;
+      font-weight: 500;
       margin-bottom: 1rem;
     }
-
-    label {
-      display: block;
-      margin-bottom: 0.5rem;
-      font-weight: 500;
-      color: #555;
+    .form-group {
+      margin-bottom: 1rem;
+      display: flex;
+      flex-direction: column;
     }
-
-    .form-control {
+    label {
+      margin-bottom: 0.4rem;
+      font-weight: 500;
+      color: #333;
+    }
+    input {
       width: 100%;
       padding: 0.75rem;
       border: 1px solid #ddd;
-      border-radius: 4px;
-      font-size: 1rem;
-      transition: border-color 0.3s;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      transition: all 0.2s;
+      background: #f9f9f6;
     }
-
-    .form-control:focus {
+    input:focus {
       outline: none;
-      border-color: #007bff;
-      box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+      border-color: #2e7d32;
+      box-shadow: 0 0 0 2px rgba(46, 125, 50, 0.08);
     }
-
-    .form-control.error {
+    input.error {
       border-color: #dc3545;
     }
-
-    .error-message {
-      color: #dc3545;
-      font-size: 0.875rem;
-      margin-top: 0.25rem;
-    }
-
-    .success-message {
-      color: #28a745;
-      font-size: 0.875rem;
-      margin-top: 0.25rem;
-      padding: 0.5rem;
-      background-color: #d4edda;
-      border: 1px solid #c3e6cb;
-      border-radius: 4px;
-    }
-
-    .btn {
-      padding: 0.75rem;
-      border: none;
-      border-radius: 4px;
-      font-size: 1rem;
-      font-weight: 500;
-      cursor: pointer;
-      transition: background-color 0.3s;
-    }
-
-    .btn-primary {
-      background-color: #007bff;
-      color: white;
-    }
-
-    .btn-primary:hover:not(:disabled) {
-      background-color: #0056b3;
-    }
-
-    .btn-primary:disabled {
-      background-color: #6c757d;
-      cursor: not-allowed;
-    }
-
-    .btn-secondary {
-      background-color: #6c757d;
-      color: white;
-    }
-
-    .btn-secondary:hover {
-      background-color: #545b62;
-    }
-
-    .btn-danger {
-      background-color: #dc3545;
-      color: white;
-    }
-
-    .btn-danger:hover:not(:disabled) {
-      background-color: #c82333;
-    }
-
-    .btn-sm {
-      padding: 0.5rem 0.75rem;
-      font-size: 0.875rem;
-    }
-
-    .search-section {
-      margin-bottom: 2rem;
-      padding-bottom: 1rem;
-      border-bottom: 1px solid #eee;
-    }
-
-    .search-section h3 {
-      color: #333;
-      margin-bottom: 1rem;
-    }
-
-    .search-inputs {
+    .search-fields {
       display: grid;
-      grid-template-columns: 1fr 1fr 1fr auto;
+      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
       gap: 1rem;
       align-items: end;
-    }
-
-    .search-results {
-      margin-bottom: 2rem;
-    }
-
-    .search-results h3 {
-      color: #333;
-      margin-bottom: 1rem;
-    }
-
-    .selected-subject {
-      margin-top: 2rem;
-      padding-top: 1rem;
-      border-top: 1px solid #eee;
-    }
-
-    .selected-subject h3 {
-      color: #333;
       margin-bottom: 1.5rem;
     }
-
-    .enroll-section {
-      margin-bottom: 2rem;
-      padding-bottom: 1rem;
-      border-bottom: 1px solid #eee;
+    .search-fields input {
+      max-width: 180px;
+      width: 100%;
     }
-
-    .enroll-section h4 {
-      color: #333;
-      margin-bottom: 1rem;
+    .input-with-button {
+      display: flex;
+      gap: 0.5rem;
+      align-items: center;
     }
-
-    .enroll-inputs {
-      display: grid;
-      grid-template-columns: 1fr auto;
-      gap: 1rem;
-      align-items: end;
+    .btn {
+      padding: 0.7rem 1.5rem;
+      border: none;
+      border-radius: 8px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-size: 1rem;
+      box-shadow: 0 1px 3px rgba(46, 125, 50, 0.04);
     }
-
-    .enrolled-students h4 {
-      color: #333;
-      margin-bottom: 1rem;
+    .btn:disabled {
+      opacity: 0.7;
+      cursor: not-allowed;
     }
-
-    .table-container {
-      overflow-x: auto;
+    .btn-primary {
+      background: #2e7d32;
+      color: white;
+      border: 1.5px solid #1b5e20;
     }
-
-    .data-table {
+    .btn-primary:hover:not(:disabled) {
+      background: #1b5e20;
+      border-color: #1b5e20;
+    }
+    .btn-secondary {
+      background: #a5d6a7;
+      color: #1b5e20;
+    }
+    .btn-secondary:hover:not(:disabled) {
+      background: #81c784;
+    }
+    .btn-danger {
+      background: #ffebee;
+      color: #c62828;
+    }
+    .btn-danger:hover:not(:disabled) {
+      background: #ffcdd2;
+    }
+    table {
       width: 100%;
       border-collapse: collapse;
-      margin-top: 1rem;
+      margin: 1rem 0;
+      font-size: 0.98rem;
+      background: #fff;
     }
-
-    .data-table th,
-    .data-table td {
+    th, td {
       padding: 0.75rem;
       text-align: left;
       border-bottom: 1px solid #eee;
     }
-
-    .data-table th {
-      background-color: #f8f9fa;
+    th {
       font-weight: 600;
-      color: #333;
+      color: #2e7d32;
+      background: #f9f9f6;
     }
-
-    .data-table tr:hover {
-      background-color: #f8f9fa;
+    tbody tr {
+      transition: background-color 0.2s;
     }
-
-    .empty-state {
-      text-align: center;
-      padding: 2rem;
+    tbody tr:hover {
+      background-color: #f5f5f0;
+    }
+    .message {
+      padding: 0.75rem;
+      border-radius: 8px;
+      margin-bottom: 1rem;
+      font-size: 0.95rem;
+    }
+    .message.error {
+      background: #ffebee;
+      color: #c62828;
+    }
+    .message.success {
+      background: #e8f5e9;
+      color: #2e7d32;
+    }
+    .student-info {
+      background: #f9f9f6;
+      padding: 1rem;
+      border-radius: 8px;
+      margin-bottom: 1.5rem;
+    }
+    .student-id {
       color: #666;
+      font-size: 0.95rem;
     }
-
-    .loading-container {
+    .average-grade {
+      font-weight: 500;
+      color: #2e7d32;
+      margin-top: 0.5rem;
+    }
+    .no-grades {
+      color: #666;
+      font-style: italic;
+      margin-top: 0.5rem;
+    }
+    .results-section {
+      max-height: 300px;
+      overflow-y: auto;
+      margin-bottom: 1.5rem;
+    }
+    .selected-subject, .selected-student {
+      margin-top: 1.5rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid #eee;
+    }
+    .enroll-form {
+      margin-top: 1.5rem;
+    }
+    .student-subjects {
+      margin-top: 1.5rem;
+    }
+    .dialog-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.5);
       display: flex;
-      flex-direction: column;
       align-items: center;
       justify-content: center;
-      min-height: 200px;
+      z-index: 1000;
+    }
+    .dialog {
+      background: white;
+      border-radius: 10px;
+      padding: 1.5rem;
+      width: 100%;
+      max-width: 400px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      h3 {
+        margin-bottom: 1.5rem;
+        color: #2e7d32;
+      }
+    }
+    .dialog-actions {
+      display: flex;
+      justify-content: flex-end;
       gap: 1rem;
-    }
-
-    .loading-spinner {
-      width: 40px;
-      height: 40px;
-      border: 4px solid #f3f3f3;
-      border-top: 4px solid #007bff;
-      border-radius: 50%;
-      animation: spin 1s linear infinite;
-    }
-
-    @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
-    }
-
-    .instructions-card {
-      max-width: 1200px;
-      margin: 0 auto;
-    }
-
-    .instructions-content {
-      display: grid;
-      grid-template-columns: 1fr 1fr 1fr;
-      gap: 2rem;
-    }
-
-    .instruction-section h3 {
-      color: #333;
-      margin-bottom: 1rem;
-    }
-
-    .instruction-section ul {
-      list-style-type: none;
-      padding: 0;
-    }
-
-    .instruction-section li {
-      padding: 0.5rem 0;
-      border-bottom: 1px solid #eee;
-      color: #666;
-    }
-
-    .instruction-section li:last-child {
-      border-bottom: none;
-    }
-
-    .instruction-section li:before {
-      content: "•";
-      color: #007bff;
-      font-weight: bold;
-      margin-right: 0.5rem;
-    }
-
-    @media (max-width: 768px) {
-      .dashboard-grid {
-        grid-template-columns: 1fr;
-        gap: 1rem;
-      }
-
-      .search-inputs {
-        grid-template-columns: 1fr;
-        gap: 1rem;
-      }
-
-      .enroll-inputs {
-        grid-template-columns: 1fr;
-        gap: 1rem;
-      }
-
-      .instructions-content {
-        grid-template-columns: 1fr;
-        gap: 1rem;
-      }
-
-      .dashboard-content {
-        padding: 1rem;
-      }
-
-      .dashboard-header {
-        padding: 1rem;
-        flex-direction: column;
-        gap: 1rem;
-        text-align: center;
-      }
+      margin-top: 1.5rem;
     }
   `]
 })
-export class TeacherDashboardComponent implements OnInit {
+export class TeacherDashboardComponent implements OnInit, OnDestroy {
   currentUser: UserDto | null = null;
   subjectForm: FormGroup;
-  gradeForm: FormGroup;
   searchForm: FormGroup;
   enrollForm: FormGroup;
+  studentSearchForm: FormGroup;
+  studentGradeForm: FormGroup;
   
   // Subject management
+  isCreatingSubject = false;
+  createSubjectError = '';
+  createSubjectSuccess = '';
   searchResults: Subject[] = [];
   selectedSubject: Subject | null = null;
   enrolledStudents: Student[] = [];
+
+  // Student management
+  studentSearchResults: Student[] = [];
+  selectedStudent: Student | null = null;
+  selectedStudentSubjects: Subject[] = [];
+  selectedStudentGrades: any[] = [];
   
   // Loading states
-  isCreatingSubject = false;
-  isAssigningGrade = false;
   isSearching = false;
   isEnrolling = false;
   isLoadingStudents = false;
   isRemovingStudent: number | null = null;
+  isSearchingStudents = false;
+  isLoadingStudentGrades = false;
+  isDeletingGrade: number | null = null;
+  isAssigningGradeToStudent = false;
   
   // Messages
-  subjectError = '';
-  subjectSuccess = '';
-  gradeError = '';
-  gradeSuccess = '';
+  searchError = '';
   enrollmentError = '';
   enrollmentSuccess = '';
+  studentGradeError = '';
+  studentGradeSuccess = '';
+
+  showGradeDialog = false;
+  selectedSubjectId: number | null = null;
+  gradeForm: FormGroup;
+  isAssigningGrade = false;
+
+  currentTime: string = '';
+  currentDate: string = '';
+  private clockInterval: any;
 
   constructor(
+    private fb: FormBuilder,
     private authService: AuthService,
     private teacherService: TeacherService,
     private userService: UserService,
-    private fb: FormBuilder,
     private router: Router
   ) {
     this.subjectForm = this.fb.group({
-      name: ['', [Validators.required]],
-      code: ['', [Validators.required]]
-    });
-
-    this.gradeForm = this.fb.group({
-      studentId: ['', [Validators.required, Validators.min(1)]],
-      subjectId: ['', [Validators.required, Validators.min(1)]],
-      value: ['', [Validators.required, Validators.min(1.0), Validators.max(6.0)]]
+      name: ['', Validators.required],
+      code: ['', Validators.required]
     });
 
     this.searchForm = this.fb.group({
-      subjectId: [''],
-      subjectCode: [''],
-      subjectName: ['']
+      id: [''],
+      code: [''],
+      name: ['']
     });
 
     this.enrollForm = this.fb.group({
       studentId: ['', [Validators.required, Validators.min(1)]]
     });
+
+    this.studentSearchForm = this.fb.group({
+      id: [''],
+      firstName: [''],
+      lastName: ['']
+    });
+    
+    this.studentGradeForm = this.fb.group({
+      subjectId: ['', Validators.required],
+      value: ['', [Validators.required, Validators.min(1.0), Validators.max(6.0)]]
+    });
+
+    this.gradeForm = this.fb.group({
+      grade: ['', [Validators.required, Validators.min(1.0), Validators.max(6.0)]]
+    });
   }
 
   ngOnInit(): void {
     this.loadUserData();
+    this.updateClock();
+    this.clockInterval = setInterval(() => this.updateClock(), 1000);
+  }
+
+  ngOnDestroy(): void {
+    if (this.clockInterval) {
+      clearInterval(this.clockInterval);
+    }
+  }
+
+  updateClock(): void {
+    const now = new Date();
+    this.currentTime = now.toLocaleTimeString([], { 
+      hour: '2-digit', 
+      minute: '2-digit', 
+      second: '2-digit',
+      hour12: true 
+    });
+    this.currentDate = now.toLocaleDateString([], {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
   }
 
   loadUserData(): void {
@@ -752,46 +674,20 @@ export class TeacherDashboardComponent implements OnInit {
     if (this.subjectForm.invalid) {
       return;
     }
-
     this.isCreatingSubject = true;
-    this.subjectError = '';
-    this.subjectSuccess = '';
+    this.clearSubjectMessages();
 
     const request: CreateSubjectRequest = this.subjectForm.value;
-
+    
     this.teacherService.createSubject(request).subscribe({
-      next: (response) => {
+      next: (subject) => {
+        this.createSubjectSuccess = `Subject "${subject.name}" created successfully!`;
         this.isCreatingSubject = false;
-        this.subjectSuccess = 'Subject created successfully!';
         this.subjectForm.reset();
       },
-      error: (error) => {
+      error: (err) => {
+        this.createSubjectError = err.error?.message || 'Failed to create subject.';
         this.isCreatingSubject = false;
-        this.subjectError = error.error?.message || 'Failed to create subject. Please try again.';
-      }
-    });
-  }
-
-  assignGrade(): void {
-    if (this.gradeForm.invalid) {
-      return;
-    }
-
-    this.isAssigningGrade = true;
-    this.gradeError = '';
-    this.gradeSuccess = '';
-
-    const request: CreateGradeRequest = this.gradeForm.value;
-
-    this.teacherService.assignGrade(request).subscribe({
-      next: (response) => {
-        this.isAssigningGrade = false;
-        this.gradeSuccess = 'Grade assigned successfully!';
-        this.gradeForm.reset();
-      },
-      error: (error) => {
-        this.isAssigningGrade = false;
-        this.gradeError = error.error?.message || 'Failed to assign grade. Please try again.';
       }
     });
   }
@@ -800,12 +696,12 @@ export class TeacherDashboardComponent implements OnInit {
     const formValue = this.searchForm.value;
     const query: any = {};
     
-    if (formValue.subjectId) {
-      query.id = formValue.subjectId;
-    } else if (formValue.subjectCode) {
-      query.code = formValue.subjectCode;
-    } else if (formValue.subjectName) {
-      query.name = formValue.subjectName;
+    if (formValue.id) {
+      query.id = formValue.id;
+    } else if (formValue.code) {
+      query.code = formValue.code;
+    } else if (formValue.name) {
+      query.name = formValue.name;
     } else {
       // If no search criteria, show all subjects
       query.code = '';
@@ -907,9 +803,185 @@ export class TeacherDashboardComponent implements OnInit {
 
   isFieldInvalid(fieldName: string): boolean {
     const control = this.subjectForm.get(fieldName) || 
-                   this.gradeForm.get(fieldName) || 
                    this.searchForm.get(fieldName) || 
-                   this.enrollForm.get(fieldName);
+                   this.enrollForm.get(fieldName) ||
+                   this.studentSearchForm.get(fieldName) ||
+                   this.studentGradeForm.get(fieldName);
     return !!(control && control.invalid && (control.dirty || control.touched));
+  }
+
+  searchStudents(): void {
+    const formValue = this.studentSearchForm.value;
+    const query: any = {};
+    
+    if (formValue.id) {
+      query.id = formValue.id;
+    } else if (formValue.firstName) {
+      query.firstName = formValue.firstName;
+    } else if (formValue.lastName) {
+      query.lastName = formValue.lastName;
+    } else {
+      return; // Do not search if all fields are empty
+    }
+
+    this.isSearchingStudents = true;
+    this.studentSearchResults = [];
+    this.selectedStudent = null;
+    this.clearStudentGradeMessages();
+
+    this.teacherService.searchStudents(query).subscribe({
+      next: (students) => {
+        this.isSearchingStudents = false;
+        this.studentSearchResults = students;
+      },
+      error: (err) => {
+        this.isSearchingStudents = false;
+        this.studentGradeError = 'Failed to search for students.';
+      }
+    });
+  }
+
+  selectStudent(student: Student): void {
+    this.selectedStudent = student;
+    this.studentSearchResults = [];
+    this.studentSearchForm.reset();
+    this.loadStudentData();
+  }
+
+  loadStudentData(): void {
+    if (!this.selectedStudent) return;
+    this.loadStudentSubjects();
+    this.loadStudentGrades();
+  }
+  
+  loadStudentSubjects(): void {
+    if (!this.selectedStudent) return;
+    this.teacherService.getStudentSubjects(this.selectedStudent.id).subscribe(subjects => {
+      this.selectedStudentSubjects = subjects;
+    });
+  }
+  
+  loadStudentGrades(): void {
+    if (!this.selectedStudent) return;
+    this.isLoadingStudentGrades = true;
+    this.clearStudentGradeMessages();
+    this.teacherService.getStudentGrades(this.selectedStudent.id).subscribe({
+      next: (grades) => {
+        this.selectedStudentGrades = grades;
+        this.isLoadingStudentGrades = false;
+      },
+      error: (err) => {
+        this.studentGradeError = 'Failed to load student grades.';
+        this.isLoadingStudentGrades = false;
+      }
+    });
+  }
+  
+  assignGradeToStudent(): void {
+    if (!this.selectedStudent || this.studentGradeForm.invalid) {
+      return;
+    }
+    
+    this.isAssigningGradeToStudent = true;
+    this.clearStudentGradeMessages();
+    
+    const request: CreateGradeRequest = {
+      studentId: this.selectedStudent.id,
+      subjectId: this.studentGradeForm.value.subjectId,
+      value: this.studentGradeForm.value.value,
+    };
+    
+    this.teacherService.assignGrade(request).subscribe({
+      next: () => {
+        this.studentGradeSuccess = 'Grade assigned successfully.';
+        this.isAssigningGradeToStudent = false;
+        this.studentGradeForm.reset();
+        this.loadStudentGrades();
+      },
+      error: (err) => {
+        this.studentGradeError = err.error?.message || 'Failed to assign grade.';
+        this.isAssigningGradeToStudent = false;
+      }
+    });
+  }
+  
+  deleteGrade(gradeId: number | undefined): void {
+    if (!gradeId) return;
+    
+    this.isDeletingGrade = gradeId;
+    this.teacherService.deleteGrade(gradeId).subscribe({
+      next: () => {
+        this.loadStudentGrades();
+        this.isDeletingGrade = null;
+      },
+      error: (error) => {
+        console.error('Error deleting grade:', error);
+        this.isDeletingGrade = null;
+      }
+    });
+  }
+  
+  clearStudentGradeMessages(): void {
+    this.studentGradeError = '';
+    this.studentGradeSuccess = '';
+  }
+
+  clearSubjectMessages(): void {
+    this.createSubjectError = '';
+    this.createSubjectSuccess = '';
+  }
+
+  clearSearchMessages(): void {
+    this.searchError = '';
+  }
+
+  calculateAverageGrade(): number {
+    if (this.selectedStudentGrades.length === 0) return 0;
+    const total = this.selectedStudentGrades.reduce((sum, grade) => sum + grade.value, 0);
+    return total / this.selectedStudentGrades.length;
+  }
+
+  getStudentGrade(subjectId: number): number | undefined {
+    return this.selectedStudentGrades.find(grade => grade.subject?.id === subjectId)?.value;
+  }
+
+  getGradeId(subjectId: number): number | undefined {
+    return this.selectedStudentGrades.find(grade => grade.subject?.id === subjectId)?.id;
+  }
+
+  hasGrade(subjectId: number): boolean {
+    return this.selectedStudentGrades.some(grade => grade.subject?.id === subjectId);
+  }
+
+  openGradeAssignment(subjectId: number): void {
+    this.selectedSubjectId = subjectId;
+    this.showGradeDialog = true;
+  }
+
+  closeGradeDialog(): void {
+    this.showGradeDialog = false;
+    this.selectedSubjectId = null;
+    this.gradeForm.reset();
+  }
+
+  async submitGrade(): Promise<void> {
+    if (this.gradeForm.invalid || !this.selectedSubjectId || !this.selectedStudent) return;
+
+    this.isAssigningGrade = true;
+    try {
+      const request: CreateGradeRequest = {
+        studentId: this.selectedStudent.id,
+        subjectId: this.selectedSubjectId,
+        value: this.gradeForm.value.grade
+      };
+
+      await this.teacherService.assignGrade(request).toPromise();
+      await this.loadStudentGrades();
+      this.closeGradeDialog();
+    } catch (error) {
+      console.error('Error assigning grade:', error);
+    } finally {
+      this.isAssigningGrade = false;
+    }
   }
 } 

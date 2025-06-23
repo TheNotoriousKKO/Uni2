@@ -23,6 +23,7 @@ export interface Grade {
   id: number;
   value: number;
   dateAssigned: string;
+  subject?: Subject;
 }
 
 export interface Student {
@@ -36,6 +37,12 @@ export interface SubjectSearchQuery {
   id?: number;
   code?: string;
   name?: string;
+}
+
+export interface StudentSearchQuery {
+  id?: number;
+  firstName?: string;
+  lastName?: string;
 }
 
 @Injectable({
@@ -54,6 +61,10 @@ export class TeacherService {
     return this.http.post<Grade>(`${this.API_URL}/grades`, request);
   }
 
+  deleteGrade(gradeId: number): Observable<void> {
+    return this.http.delete<void>(`${this.API_URL}/grades/${gradeId}`);
+  }
+
   searchSubjects(query: SubjectSearchQuery): Observable<Subject[]> {
     let params = '';
     if (query.id) {
@@ -64,6 +75,26 @@ export class TeacherService {
       params = `?name=${encodeURIComponent(query.name)}`;
     }
     return this.http.get<Subject[]>(`${this.API_URL}/subjects/search${params}`);
+  }
+
+  searchStudents(query: StudentSearchQuery): Observable<Student[]> {
+    let params = '';
+    if (query.id) {
+      params = `?id=${query.id}`;
+    } else if (query.firstName) {
+      params = `?firstName=${encodeURIComponent(query.firstName)}`;
+    } else if (query.lastName) {
+      params = `?lastName=${encodeURIComponent(query.lastName)}`;
+    }
+    return this.http.get<Student[]>(`${this.API_URL}/students/search${params}`);
+  }
+
+  getStudentSubjects(studentId: number): Observable<Subject[]> {
+    return this.http.get<Subject[]>(`${this.API_URL}/students/${studentId}/subjects`);
+  }
+
+  getStudentGrades(studentId: number): Observable<Grade[]> {
+    return this.http.get<Grade[]>(`${this.API_URL}/students/${studentId}/grades`);
   }
 
   getEnrolledStudents(subjectId: number): Observable<Student[]> {

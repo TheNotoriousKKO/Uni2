@@ -1,15 +1,12 @@
 import { Component } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
-import { AuthService, LoginCredentials } from '../../core/auth.service';
+import { RouterModule } from '@angular/router';
 
 @Component({
-  selector: 'app-login',
+  selector: 'app-landing',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterLink],
+  imports: [RouterModule],
   template: `
-    <div class="login-bg">
+    <div class="landing-bg">
       <div id="app" class="academic-animation">
         <div class="papers" style="--total: 5">
           <div class="paper -rogue" style="--i: 0">
@@ -76,51 +73,13 @@ import { AuthService, LoginCredentials } from '../../core/auth.service';
           <div class="paper-shadow" style="--i: 4"></div>
         </div>
       </div>
-      <div class="login-content">
-        <div class="login-card fade-in">
-          <h1>Login</h1>
-          <form [formGroup]="loginForm" (ngSubmit)="onSubmit()">
-            <div class="form-group">
-              <label for="username">Username</label>
-              <input 
-                type="text" 
-                id="username" 
-                formControlName="username" 
-                class="form-control"
-                [class.error]="isFieldInvalid('username')"
-                autocomplete="username"
-              >
-              <div class="error-message" *ngIf="isFieldInvalid('username')">
-                Username is required
-              </div>
-            </div>
-            <div class="form-group">
-              <label for="password">Password</label>
-              <input 
-                type="password" 
-                id="password" 
-                formControlName="password" 
-                class="form-control"
-                [class.error]="isFieldInvalid('password')"
-                autocomplete="current-password"
-              >
-              <div class="error-message" *ngIf="isFieldInvalid('password')">
-                Password is required
-              </div>
-            </div>
-            <div class="error-message" *ngIf="errorMessage">
-              {{ errorMessage }}
-            </div>
-            <button 
-              type="submit" 
-              class="btn btn-primary" 
-              [disabled]="loginForm.invalid || isLoading"
-            >
-              {{ isLoading ? 'Logging in...' : 'Login' }}
-            </button>
-          </form>
-          <div class="register-link">
-            <p>Don't have an account? <a routerLink="/register">Register here</a></p>
+      <div class="landing-content">
+        <div class="content-box fade-in">
+          <h1>Welcome to Uni2</h1>
+          <p class="subtitle">Your modern university management platform.</p>
+          <div class="button-container">
+            <a routerLink="/login" class="btn btn-primary">Login</a>
+            <a routerLink="/register" class="btn btn-secondary">Register</a>
           </div>
         </div>
       </div>
@@ -134,14 +93,14 @@ import { AuthService, LoginCredentials } from '../../core/auth.service';
       width: 100vw;
       overflow: hidden;
     }
-    .login-bg {
+    .landing-bg {
       position: fixed;
       inset: 0;
       width: 100vw;
       height: 100vh;
       overflow: hidden;
       z-index: 0;
-      background: rgb(5, 69, 29);
+      background:rgb(5, 69, 29);
     }
     /* Animation color palette (scoped to animation only) */
     .academic-animation {
@@ -306,7 +265,7 @@ import { AuthService, LoginCredentials } from '../../core/auth.service';
       }
     }
     /* Overlay content */
-    .login-content {
+    .landing-content {
       position: fixed;
       inset: 0;
       display: flex;
@@ -315,7 +274,7 @@ import { AuthService, LoginCredentials } from '../../core/auth.service';
       z-index: 2;
       pointer-events: none;
     }
-    .login-card {
+    .content-box {
       background: #F5F5F0;
       padding: 2rem 2.5rem;
       border-radius: 12px;
@@ -332,19 +291,19 @@ import { AuthService, LoginCredentials } from '../../core/auth.service';
       animation: fadeIn 1.1s cubic-bezier(.36,.07,.25,1);
     }
     @media (max-width: 900px) {
-      .login-card {
+      .content-box {
         margin-right: 0;
         margin-left: auto;
         margin-right: auto;
         align-items: center;
         text-align: center;
       }
-      .login-content {
+      .landing-content {
         justify-content: center;
       }
     }
     @media (max-width: 600px) {
-      .login-card {
+      .content-box {
         padding: 1.25rem 0.5rem;
         min-width: 0;
         max-width: 98vw;
@@ -369,43 +328,19 @@ import { AuthService, LoginCredentials } from '../../core/auth.service';
       margin-bottom: 0.5rem;
       letter-spacing: -1px;
     }
-    .form-group {
-      margin-bottom: 1rem;
-      width: 100%;
-      text-align: left;
-    }
-    label {
-      display: block;
-      margin-bottom: 0.5rem;
-      font-weight: 600;
-      color: #3A6351;
+    .subtitle {
       font-family: 'Open Sans', sans-serif;
+      font-size: 1.05rem;
+      color: #666;
+      margin-bottom: 2.2rem;
+      font-weight: 400;
     }
-    .form-control {
+    .button-container {
+      display: flex;
+      gap: 1.25rem;
       width: 100%;
-      padding: 0.7rem 1rem;
-      border: 1.5px solid #B9C4A7;
-      border-radius: 7px;
-      font-size: 1rem;
-      font-family: 'Open Sans', sans-serif;
-      background: #F5F5F0;
-      color: #3A6351;
-      transition: border 0.2s, box-shadow 0.2s;
-    }
-    .form-control:focus {
-      outline: none;
-      border: 1.5px solid #3A6351;
-      box-shadow: 0 0 0 2px #B9C4A7bb;
-    }
-    .form-control.error {
-      border-color: #dc3545;
-    }
-    .error-message {
-      color: #dc3545;
-      font-size: 0.95rem;
-      margin-top: 0.25rem;
-      text-align: left;
-      width: 100%;
+      margin-top: 0.5rem;
+      justify-content: center;
     }
     .btn {
       font-family: 'Open Sans', sans-serif;
@@ -422,8 +357,6 @@ import { AuthService, LoginCredentials } from '../../core/auth.service';
       border: none;
       box-shadow: none;
       display: inline-block;
-      width: 100%;
-      margin-top: 0.5rem;
     }
     .btn-primary {
       background: #3A6351;
@@ -437,81 +370,38 @@ import { AuthService, LoginCredentials } from '../../core/auth.service';
       box-shadow: 0 0 0 3px #B9C4A7aa;
       transform: translateY(-2px) scale(1.03);
     }
-    .register-link {
-      text-align: center;
-      margin-top: 1.5rem;
-      padding-top: 1rem;
-      border-top: 1px solid #eee;
-      width: 100%;
-    }
-    .register-link a {
+    .btn-secondary {
+      background: transparent;
       color: #3A6351;
-      text-decoration: none;
-      font-weight: 600;
-      font-family: 'Open Sans', sans-serif;
-      transition: color 0.2s;
+      border: 1.5px solid #3A6351;
     }
-    .register-link a:hover {
+    .btn-secondary:hover, .btn-secondary:focus {
+      background: #B9C4A7;
       color: #2F5244;
-      text-decoration: underline;
+      border: 1.5px solid #2F5244;
+      box-shadow: 0 0 0 3px #B9C4A7aa;
+      transform: translateY(-2px) scale(1.03);
+    }
+    .btn:focus {
+      outline: none;
+    }
+    input[type="text"], input[type="password"], input[type="email"], input[type="number"] {
+      font-family: 'Open Sans', sans-serif;
+      border-radius: 7px;
+      border: 1.5px solid #B9C4A7;
+      padding: 0.7rem 1rem;
+      font-size: 1rem;
+      margin-bottom: 1.1rem;
+      width: 100%;
+      transition: border 0.2s, box-shadow 0.2s;
+      background: #F5F5F0;
+      color: #3A6351;
+    }
+    input[type="text"]:focus, input[type="password"]:focus, input[type="email"]:focus, input[type="number"]:focus {
+      border: 1.5px solid #3A6351;
+      box-shadow: 0 0 0 2px #B9C4A7bb;
+      outline: none;
     }
   `]
 })
-export class LoginComponent {
-  loginForm: FormGroup;
-  isLoading = false;
-  errorMessage = '';
-
-  constructor(
-    private fb: FormBuilder,
-    private authService: AuthService,
-    private router: Router
-  ) {
-    this.loginForm = this.fb.group({
-      username: ['', [Validators.required]],
-      password: ['', [Validators.required]]
-    });
-  }
-
-  onSubmit(): void {
-    if (this.loginForm.invalid) {
-      return;
-    }
-
-    this.isLoading = true;
-    this.errorMessage = '';
-
-    const credentials: LoginCredentials = this.loginForm.value;
-
-    this.authService.login(credentials).subscribe({
-      next: () => {
-        this.isLoading = false;
-        this.redirectBasedOnRole();
-      },
-      error: (error) => {
-        this.isLoading = false;
-        this.errorMessage = error.error?.message || 'Login failed. Please try again.';
-      }
-    });
-  }
-
-  private redirectBasedOnRole(): void {
-    const role = this.authService.getUserRoleFromToken();
-    
-    switch (role) {
-      case 'STUDENT':
-        this.router.navigate(['/student']);
-        break;
-      case 'TEACHER':
-        this.router.navigate(['/teacher']);
-        break;
-      default:
-        this.router.navigate(['/']);
-    }
-  }
-
-  isFieldInvalid(fieldName: string): boolean {
-    const field = this.loginForm.get(fieldName);
-    return field ? field.invalid && (field.dirty || field.touched) : false;
-  }
-} 
+export class LandingPageComponent {} 

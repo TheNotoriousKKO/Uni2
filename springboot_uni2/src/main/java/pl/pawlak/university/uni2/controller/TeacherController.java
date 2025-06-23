@@ -20,9 +20,12 @@ import pl.pawlak.university.uni2.repository.GradeRepository;
 import pl.pawlak.university.uni2.repository.StudentRepository;
 import pl.pawlak.university.uni2.repository.SubjectRepository;
 import pl.pawlak.university.uni2.repository.TeacherRepository;
+import org.springframework.data.domain.PageRequest;
 
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.Collections;
+import java.util.ArrayList;
 
 @RestController
 @RequestMapping("/api/v1/teacher")
@@ -72,27 +75,22 @@ public class TeacherController {
             @RequestParam(required = false) Long id,
             @RequestParam(required = false) String code,
             @RequestParam(required = false) String name) {
-        
         String username = getCurrentUsername();
         Teacher teacher = teacherRepository.findByUserUsername(username)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Teacher not found"));
-        
         List<Subject> subjects;
-        
         if (id != null) {
-            subjects = subjectRepository.findByIdAndTeacherId(id, teacher.getId());
+            subjects = subjectRepository.findByIdAndTeacherId(id, teacher.getId(), PageRequest.of(0, 10)).getContent();
         } else if (code != null && !code.trim().isEmpty()) {
-            subjects = subjectRepository.findByCodeAndTeacherId(code, teacher.getId());
+            subjects = subjectRepository.findByCodeAndTeacherId(code, teacher.getId(), PageRequest.of(0, 10)).getContent();
         } else if (name != null && !name.trim().isEmpty()) {
-            subjects = subjectRepository.findByTeacherIdAndNameIgnoreCaseContaining(teacher.getId(), name.trim());
+            subjects = subjectRepository.findByTeacherIdAndNameIgnoreCaseContaining(teacher.getId(), name.trim(), PageRequest.of(0, 10)).getContent();
         } else {
-            subjects = subjectRepository.findByTeacherId(teacher.getId());
+            subjects = subjectRepository.findByTeacherId(teacher.getId(), PageRequest.of(0, 10)).getContent();
         }
-        
         List<SubjectDto> subjectDtos = subjects.stream()
                 .map(subject -> new SubjectDto(subject.getId(), subject.getName(), subject.getCode()))
                 .collect(Collectors.toList());
-        
         return ResponseEntity.ok(subjectDtos);
     }
     
@@ -228,6 +226,84 @@ public class TeacherController {
         );
         
         return ResponseEntity.status(HttpStatus.CREATED).body(gradeDto);
+    }
+    
+    @GetMapping("/students/search")
+    public ResponseEntity<List<StudentDto>> searchStudents(
+            @RequestParam(required = false) Long id,
+            @RequestParam(required = false) String firstName,
+            @RequestParam(required = false) String lastName) {
+        List<Student> students = new ArrayList<>();
+        if (id != null) {
+            studentRepository.findById(id).ifPresent(students::add);
+        } else if (firstName != null && !firstName.trim().isEmpty()) {
+            students = studentRepository.findByUserFirstNameContainingIgnoreCase(firstName.trim(), PageRequest.of(0, 10)).getContent();
+        } else if (lastName != null && !lastName.trim().isEmpty()) {
+            students = studentRepository.findByUserLastNameContainingIgnoreCase(lastName.trim(), PageRequest.of(0, 10)).getContent();
+        }
+        List<StudentDto> studentDtos = students.stream()
+                .map(student -> new StudentDto(
+                        student.getId(),
+                        student.getUser().getUsername(),
+                        student.getUser().getFirstName(),
+                        student.getUser().getLastName()
+                ))
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(studentDtos);
+    }
+    
+    @GetMapping("/students/{studentId}/subjects")
+    public ResponseEntity<List<SubjectDto>> getStudentSubjects(@PathVariable Long studentId) {
+        Student student = studentRepository.findById(studentId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Student not found"));
+        
+        List<SubjectDto> subjectDtos = student.getEnrolledSubjects().stream()
+                .map(subject -> new SubjectDto(subject.getId(), subject.getName(), subject.getCode()))
+                .collect(Collectors.toList());
+        
+        return ResponseEntity.ok(subjectDtos);
+    }
+
+    @GetMapping("/students/{studentId}/grades")
+    public ResponseEntity<List<GradeDto>> getStudentGrades(@PathVariable Long studentId) {
+        if (!studentRepository.existsById(studentId)) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Student not found");
+        }
+        
+        List<Grade> grades = gradeRepository.findByStudentId(studentId);
+        
+        List<GradeDto> gradeDtos = grades.stream()
+                .map(grade -> {
+                    SubjectDto subjectDto = new SubjectDto(
+                            grade.getSubject().getId(),
+                            grade.getSubject().getName(),
+                            grade.getSubject().getCode()
+                    );
+                    GradeDto gradeDto = new GradeDto(grade.getId(), grade.getValue(), grade.getDateAssigned());
+                    gradeDto.setSubject(subjectDto);
+                    return gradeDto;
+                })
+                .collect(Collectors.toList());
+        
+        return ResponseEntity.ok(gradeDtos);
+    }
+    
+    @DeleteMapping("/grades/{gradeId}")
+    public ResponseEntity<Void> deleteGrade(@PathVariable Long gradeId) {
+        String username = getCurrentUsername();
+        Teacher teacher = teacherRepository.findByUserUsername(username)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Teacher not found"));
+
+        Grade grade = gradeRepository.findById(gradeId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Grade not found"));
+
+        if (!grade.getSubject().getTeacher().getId().equals(teacher.getId())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You can only delete grades for your own subjects.");
+        }
+
+        gradeRepository.delete(grade);
+        
+        return ResponseEntity.noContent().build();
     }
     
     private String getCurrentUsername() {

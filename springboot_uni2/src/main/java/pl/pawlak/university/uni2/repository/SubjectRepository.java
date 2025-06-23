@@ -1,5 +1,7 @@
 package pl.pawlak.university.uni2.repository;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 import pl.pawlak.university.uni2.model.Subject;
@@ -47,4 +49,9 @@ public interface SubjectRepository extends JpaRepository<Subject, Long> {
      * @return List of subjects that match the criteria
      */
     List<Subject> findByTeacherIdAndNameIgnoreCaseContaining(Long teacherId, String name);
+
+    Page<Subject> findByIdAndTeacherId(Long id, Long teacherId, Pageable pageable);
+    Page<Subject> findByCodeAndTeacherId(String code, Long teacherId, Pageable pageable);
+    Page<Subject> findByTeacherIdAndNameIgnoreCaseContaining(Long teacherId, String name, Pageable pageable);
+    Page<Subject> findByTeacherId(Long teacherId, Pageable pageable);
 } 

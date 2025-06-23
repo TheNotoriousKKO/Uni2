@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { AuthService } from '../../core/auth.service';
@@ -10,314 +10,361 @@ import { UserService, UserDto } from '../../core/user.service';
   standalone: true,
   imports: [CommonModule],
   template: `
-    <div class="dashboard-container">
-      <header class="dashboard-header">
-        <h1>Student Dashboard</h1>
-        <div class="user-info">
-          <span>Welcome, {{ currentUser?.firstName }} {{ currentUser?.lastName }} (ID: {{ currentUser?.id }})</span>
-          <button (click)="logout()" class="btn btn-secondary">Logout</button>
-        </div>
-      </header>
-      
-      <main class="dashboard-content">
-        <div class="loading-container" *ngIf="isLoading">
-          <div class="loading-spinner"></div>
-          <p>Loading your data...</p>
-        </div>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    
+    <!-- HEADER (Welcome) -->
+    <header class="dashboard-header">
+      <span class="welcome-text">Welcome, {{ currentUser?.firstName }} {{ currentUser?.lastName }} (ID: {{ currentUser?.id }})</span>
+      <button (click)="logout()" class="btn btn-secondary">Logout</button>
+    </header>
 
-        <div class="error-container" *ngIf="errorMessage">
-          <div class="error-message">
-            <h3>Error</h3>
-            <p>{{ errorMessage }}</p>
-            <button (click)="loadData()" class="btn btn-primary">Retry</button>
-          </div>
-        </div>
-
-        <div class="dashboard-grid" *ngIf="!isLoading && !errorMessage">
-          <!-- Enrolled Subjects Section -->
-          <div class="dashboard-card">
-            <h2>Enrolled Subjects</h2>
-            <div class="table-container">
-              <table class="data-table" *ngIf="subjects.length > 0">
-                <thead>
-                  <tr>
-                    <th>Code</th>
-                    <th>Name</th>
-                    <th>Teacher</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr *ngFor="let subject of subjects">
-                    <td>{{ subject.code }}</td>
-                    <td>{{ subject.name }}</td>
-                    <td>{{ subject.teacher?.username || 'Not assigned' }}</td>
-                  </tr>
-                </tbody>
-              </table>
-              <div class="empty-state" *ngIf="subjects.length === 0">
-                <p>You are not enrolled in any subjects yet.</p>
-              </div>
-            </div>
-          </div>
-
-          <!-- Grades Section -->
-          <div class="dashboard-card">
-            <h2>Your Grades</h2>
-            <div class="table-container">
-              <table class="data-table" *ngIf="grades.length > 0">
-                <thead>
-                  <tr>
-                    <th>Subject</th>
-                    <th>Grade</th>
-                    <th>Date</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr *ngFor="let grade of grades">
-                    <td>{{ grade.subject.name }} ({{ grade.subject.code }})</td>
-                    <td>
-                      <span class="grade-value" [class]="getGradeClass(grade.value)">
-                        {{ grade.value }}
-                      </span>
-                    </td>
-                    <td>{{ formatDate(grade.dateAssigned) }}</td>
-                  </tr>
-                </tbody>
-              </table>
-              <div class="empty-state" *ngIf="grades.length === 0">
-                <p>No grades have been assigned yet.</p>
-              </div>
+    <main class="dashboard-content">
+      <div class="row row-top">
+        <!-- Enrolled Subjects Card -->
+        <div class="card enrolled-subjects-card">
+          <h2>Your Enrolled Subjects</h2>
+          <div class="table-container">
+            <table *ngIf="subjects.length > 0">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Name</th>
+                  <th>Code</th>
+                  <th>Teacher</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let subject of subjects">
+                  <td>{{ subject.id }}</td>
+                  <td>{{ subject.name }}</td>
+                  <td>{{ subject.code }}</td>
+                  <td>{{ subject.teacher?.firstName }} {{ subject.teacher?.lastName }}</td>
+                </tr>
+              </tbody>
+            </table>
+            <div class="empty-state" *ngIf="subjects.length === 0">
+              <p>You are not enrolled in any subjects yet.</p>
             </div>
           </div>
         </div>
-      </main>
-    </div>
+        <!-- Clock & Date Card -->
+        <div class="card clock-card">
+          <div class="clock-content">
+            <div class="clock-date">{{ currentDate }}</div>
+            <div class="clock-time">{{ currentTime }}</div>
+            <div class="clock-label">Local Time</div>
+          </div>
+        </div>
+      </div>
+      <div class="row row-bottom">
+        <!-- Average Grade Card -->
+        <div class="card average-grade-card">
+          <h2>Average Grade</h2>
+          <div class="average-grade-content">
+            <ng-container *ngIf="grades.length > 0; else noGrades">
+              <div class="average-grade-value">{{ getAverageGrade() | number:'1.2-2' }}</div>
+            </ng-container>
+            <ng-template #noGrades>
+              <div class="no-grades">No grades assigned yet.</div>
+            </ng-template>
+          </div>
+        </div>
+        <!-- Grades Table Card -->
+        <div class="card grades-table-card">
+          <h2>Your Grades</h2>
+          <div class="table-container">
+            <table *ngIf="grades.length > 0">
+              <thead>
+                <tr>
+                  <th>Subject</th>
+                  <th>Grade</th>
+                  <th>Date</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let grade of grades">
+                  <td>{{ grade.subject.name }}</td>
+                  <td>
+                    <span class="grade-value">{{ grade.value }}</span>
+                  </td>
+                  <td>{{ formatDate(grade.dateAssigned) }}</td>
+                </tr>
+              </tbody>
+            </table>
+            <div class="empty-state" *ngIf="grades.length === 0">
+              <p>No grades have been assigned yet.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
   `,
   styles: [`
-    .dashboard-container {
+    :host {
+      font-family: 'Inter', 'Open Sans', sans-serif;
+      color: #2e3d2c;
+      font-size: 16px;
+      background-color: #f3f7f3;
       min-height: 100vh;
-      background-color: #f8f9fa;
+      display: block;
     }
-
     .dashboard-header {
-      background: white;
-      padding: 1rem 2rem;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      max-width: 1200px;
+      margin: 2rem auto 2rem auto;
       display: flex;
       justify-content: space-between;
       align-items: center;
+      padding: 1.5rem 2rem;
+      background: #e0ede0;
+      border-radius: 10px;
+      box-shadow: 0 2px 8px rgba(46, 125, 50, 0.04);
+      border-bottom: 1px solid #e0e0e0;
+      color: #2e7d32;
     }
-
-    .dashboard-header h1 {
-      margin: 0;
-      color: #333;
+    .welcome-text {
+      font-size: 1.1rem;
+      font-weight: 500;
     }
-
-    .user-info {
+    .dashboard-content {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 2.5rem;
+    }
+    .row {
+      display: flex;
+      gap: 2rem;
+      align-items: stretch;
+      width: 100%;
+    }
+    .row-top .enrolled-subjects-card {
+      flex: 0 1 70%;
+    }
+    .row-top .clock-card {
+      flex: 1 1 0;
+      min-width: 220px;
       display: flex;
       align-items: center;
-      gap: 1rem;
+      justify-content: center;
     }
-
-    .user-info span {
-      color: #666;
-    }
-
-    .dashboard-content {
-      padding: 2rem;
-    }
-
-    .loading-container {
+    .row-bottom .average-grade-card {
+      flex: 0 1 40%;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      min-height: 400px;
-      gap: 1rem;
+      background: #d2e6d2;
+      color: #2e7d32;
+      box-shadow: 0 2px 8px rgba(46, 125, 50, 0.08);
     }
-
-    .loading-spinner {
-      width: 40px;
-      height: 40px;
-      border: 4px solid #f3f3f3;
-      border-top: 4px solid #007bff;
-      border-radius: 50%;
-      animation: spin 1s linear infinite;
+    .row-bottom .grades-table-card {
+      flex: 1 1 0;
     }
-
-    @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
-    }
-
-    .error-container {
+    .card {
+      background: #f9f9f6;
+      border-radius: 10px;
+      box-shadow: 0 2px 8px rgba(46, 125, 50, 0.07);
+      padding: 2rem 2rem 1.5rem 2rem;
       display: flex;
-      justify-content: center;
-      align-items: center;
-      min-height: 400px;
+      flex-direction: column;
+      min-width: 0;
     }
-
-    .error-message {
-      background: white;
-      padding: 2rem;
-      border-radius: 8px;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-      text-align: center;
-      max-width: 500px;
-    }
-
-    .error-message h3 {
-      color: #dc3545;
-      margin-bottom: 1rem;
-    }
-
-    .dashboard-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 2rem;
-      max-width: 1200px;
-      margin: 0 auto;
-    }
-
-    .dashboard-card {
-      background: white;
-      padding: 2rem;
-      border-radius: 8px;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-    }
-
-    .dashboard-card h2 {
-      color: #333;
+    h2 {
+      font-size: 1.25rem;
+      font-weight: 600;
       margin-bottom: 1.5rem;
-      padding-bottom: 0.5rem;
-      border-bottom: 2px solid #f8f9fa;
+      color: #2e7d32;
     }
-
     .table-container {
       overflow-x: auto;
     }
-
-    .data-table {
+    table {
       width: 100%;
       border-collapse: collapse;
-      margin-top: 1rem;
+      margin: 1rem 0;
+      font-size: 0.98rem;
+      background: #fff;
     }
-
-    .data-table th,
-    .data-table td {
+    th, td {
       padding: 0.75rem;
       text-align: left;
       border-bottom: 1px solid #eee;
     }
-
-    .data-table th {
-      background-color: #f8f9fa;
+    th {
       font-weight: 600;
-      color: #333;
+      color: #2e7d32;
+      background: #f9f9f6;
     }
-
-    .data-table tr:hover {
-      background-color: #f8f9fa;
+    tbody tr {
+      transition: background-color 0.2s;
     }
-
+    tbody tr:hover {
+      background-color: #f5f5f0;
+    }
     .empty-state {
       text-align: center;
       padding: 2rem;
       color: #666;
     }
-
-    .grade-value {
+    .clock-content {
+      text-align: center;
+      width: 100%;
+    }
+    .clock-date {
+      font-size: 1.1rem;
+      color: #61876E;
+      margin-bottom: 1rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .clock-time {
+      font-size: 2.8rem;
+      font-family: 'Inter', monospace;
+      color: #2e7d32;
       font-weight: 600;
-      padding: 0.25rem 0.5rem;
-      border-radius: 4px;
-      font-size: 0.875rem;
+      letter-spacing: 0.05em;
+      margin-bottom: 0.5rem;
+      line-height: 1.2;
     }
-
-    .grade-value.excellent {
-      background-color: #d4edda;
-      color: #155724;
+    .clock-label {
+      font-size: 0.9rem;
+      color: #61876E;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
     }
-
-    .grade-value.good {
-      background-color: #d1ecf1;
-      color: #0c5460;
+    .average-grade-content {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      min-height: 120px;
     }
-
-    .grade-value.average {
-      background-color: #fff3cd;
-      color: #856404;
+    .average-grade-value {
+      font-size: 3.2rem;
+      font-weight: 700;
+      color: #2e7d32;
+      background: #fff;
+      border-radius: 50%;
+      width: 110px;
+      height: 110px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 2px 8px rgba(46, 125, 50, 0.08);
+      margin-bottom: 0.5rem;
     }
-
-    .grade-value.poor {
-      background-color: #f8d7da;
-      color: #721c24;
+    .no-grades {
+      color: #61876E;
+      font-size: 1.1rem;
+      font-style: italic;
+      margin-top: 1.5rem;
     }
-
     .btn {
-      padding: 0.5rem 1rem;
+      padding: 0.7rem 1.5rem;
       border: none;
-      border-radius: 4px;
-      font-size: 0.875rem;
+      border-radius: 8px;
       font-weight: 500;
       cursor: pointer;
-      transition: background-color 0.3s;
+      transition: all 0.2s;
+      font-size: 1rem;
+      box-shadow: 0 1px 3px rgba(46, 125, 50, 0.04);
     }
-
+    .btn:disabled {
+      opacity: 0.7;
+      cursor: not-allowed;
+    }
     .btn-primary {
-      background-color: #007bff;
+      background: #2e7d32;
       color: white;
+      border: 1.5px solid #1b5e20;
     }
-
-    .btn-primary:hover {
-      background-color: #0056b3;
+    .btn-primary:hover:not(:disabled) {
+      background: #1b5e20;
+      border-color: #1b5e20;
     }
-
     .btn-secondary {
-      background-color: #6c757d;
-      color: white;
+      background: #a5d6a7;
+      color: #1b5e20;
     }
-
-    .btn-secondary:hover {
-      background-color: #545b62;
+    .btn-secondary:hover:not(:disabled) {
+      background: #81c784;
     }
-
-    @media (max-width: 768px) {
-      .dashboard-grid {
-        grid-template-columns: 1fr;
-        gap: 1rem;
-      }
-
-      .dashboard-content {
-        padding: 1rem;
-      }
-
-      .dashboard-header {
-        padding: 1rem;
-        flex-direction: column;
-        gap: 1rem;
-        text-align: center;
-      }
+    .search-fields {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+      gap: 1rem;
+      align-items: end;
+      margin-bottom: 1.5rem;
+    }
+    .search-fields input {
+      max-width: 180px;
+      width: 100%;
     }
   `]
 })
-export class StudentDashboardComponent implements OnInit {
+export class StudentDashboardComponent implements OnInit, OnDestroy {
   currentUser: UserDto | null = null;
   subjects: Subject[] = [];
   grades: Grade[] = [];
   isLoading = false;
   errorMessage = '';
+  currentTime: string = '';
+  currentDate: string = '';
+  private clockInterval: any;
 
   constructor(
     private authService: AuthService,
     private studentService: StudentService,
     private userService: UserService,
     private router: Router
-  ) {
-  }
+  ) {}
 
   ngOnInit(): void {
     this.loadUserData();
     this.loadData();
+    this.updateClock();
+    this.clockInterval = setInterval(() => this.updateClock(), 1000);
+  }
+
+  ngOnDestroy(): void {
+    if (this.clockInterval) {
+      clearInterval(this.clockInterval);
+    }
+  }
+
+  updateClock(): void {
+    const now = new Date();
+    this.currentTime = now.toLocaleTimeString([], { 
+      hour: '2-digit', 
+      minute: '2-digit', 
+      second: '2-digit',
+      hour12: true 
+    });
+    this.currentDate = now.toLocaleDateString([], {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  }
+
+  getAverageGrade(): number {
+    if (!this.grades.length) return 0;
+    const total = this.grades.reduce((sum, g) => sum + g.value, 0);
+    return total / this.grades.length;
+  }
+
+  logout(): void {
+    this.authService.logout();
+    this.router.navigate(['/']);
+  }
+
+  formatDate(dateString: string): string {
+    const date = new Date(dateString);
+    return date.toLocaleDateString();
   }
 
   loadUserData(): void {
@@ -335,8 +382,6 @@ export class StudentDashboardComponent implements OnInit {
   loadData(): void {
     this.isLoading = true;
     this.errorMessage = '';
-
-    // Load subjects and grades in parallel
     Promise.all([
       this.studentService.getEnrolledSubjects().toPromise(),
       this.studentService.getGrades().toPromise()
@@ -349,21 +394,5 @@ export class StudentDashboardComponent implements OnInit {
       this.errorMessage = 'Failed to load data. Please try again.';
       this.isLoading = false;
     });
-  }
-
-  logout(): void {
-    this.authService.logout();
-    this.router.navigate(['/login']);
-  }
-
-  getGradeClass(value: number): string {
-    if (value >= 5.0) return 'excellent';
-    if (value >= 4.0) return 'good';
-    if (value >= 3.0) return 'average';
-    return 'poor';
-  }
-
-  formatDate(dateString: string): string {
-    return new Date(dateString).toLocaleDateString();
   }
 } 
