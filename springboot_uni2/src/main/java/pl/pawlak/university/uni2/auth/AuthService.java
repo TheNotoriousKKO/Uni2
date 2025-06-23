@@ -5,6 +5,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import pl.pawlak.university.uni2.dto.UserDto;
 import pl.pawlak.university.uni2.dto.auth.AuthResponse;
 import pl.pawlak.university.uni2.dto.auth.LoginRequest;
 import pl.pawlak.university.uni2.dto.auth.RegisterRequest;
@@ -48,33 +49,26 @@ public class AuthService {
             throw new RuntimeException("Username already exists");
         }
         
-        // Check if email already exists
-        if (userRepository.findByUsername(request.getEmail()).isPresent()) {
-            throw new RuntimeException("Email already exists");
-        }
-        
         User savedUser;
         
         // Create user based on role
         if (request.getRole() == UserRole.STUDENT) {
-            if (request.getIndexNumber() == null || request.getIndexNumber().trim().isEmpty()) {
-                throw new RuntimeException("Index number is required for students");
-            }
-            
             StudentUser studentUser = new StudentUser(
                     request.getUsername(),
                     passwordEncoder.encode(request.getPassword()),
-                    request.getEmail()
+                    request.getFirstName(),
+                    request.getLastName()
             );
             savedUser = userRepository.save(studentUser);
             
-            Student student = new Student(request.getIndexNumber(), savedUser);
+            Student student = new Student(savedUser);
             studentRepository.save(student);
         } else if (request.getRole() == UserRole.TEACHER) {
             TeacherUser teacherUser = new TeacherUser(
                     request.getUsername(),
                     passwordEncoder.encode(request.getPassword()),
-                    request.getEmail()
+                    request.getFirstName(),
+                    request.getLastName()
             );
             savedUser = userRepository.save(teacherUser);
             
@@ -99,5 +93,18 @@ public class AuthService {
         
         String token = jwtProvider.generateToken(user);
         return new AuthResponse(token);
+    }
+    
+    public UserDto getCurrentUser(String username) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        
+        return new UserDto(
+                user.getId(),
+                user.getUsername(),
+                user.getFirstName(),
+                user.getLastName(),
+                user.getRole()
+        );
     }
 } 

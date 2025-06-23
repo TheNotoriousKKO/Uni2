@@ -27,9 +27,15 @@ export interface Grade {
 
 export interface Student {
   id: number;
-  indexNumber: string;
   username: string;
-  email: string;
+  firstName: string;
+  lastName: string;
+}
+
+export interface SubjectSearchQuery {
+  id?: number;
+  code?: string;
+  name?: string;
 }
 
 @Injectable({
@@ -46,5 +52,29 @@ export class TeacherService {
 
   assignGrade(request: CreateGradeRequest): Observable<Grade> {
     return this.http.post<Grade>(`${this.API_URL}/grades`, request);
+  }
+
+  searchSubjects(query: SubjectSearchQuery): Observable<Subject[]> {
+    let params = '';
+    if (query.id) {
+      params = `?id=${query.id}`;
+    } else if (query.code) {
+      params = `?code=${query.code}`;
+    } else if (query.name) {
+      params = `?name=${encodeURIComponent(query.name)}`;
+    }
+    return this.http.get<Subject[]>(`${this.API_URL}/subjects/search${params}`);
+  }
+
+  getEnrolledStudents(subjectId: number): Observable<Student[]> {
+    return this.http.get<Student[]>(`${this.API_URL}/subjects/${subjectId}/students`);
+  }
+
+  enrollStudent(subjectId: number, studentId: number): Observable<void> {
+    return this.http.post<void>(`${this.API_URL}/subjects/${subjectId}/students/${studentId}`, {});
+  }
+
+  removeStudent(subjectId: number, studentId: number): Observable<void> {
+    return this.http.delete<void>(`${this.API_URL}/subjects/${subjectId}/students/${studentId}`);
   }
 } 

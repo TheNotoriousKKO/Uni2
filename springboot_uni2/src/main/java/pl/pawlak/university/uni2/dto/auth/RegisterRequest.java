@@ -1,6 +1,5 @@
 package pl.pawlak.university.uni2.dto.auth;
 
-import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import pl.pawlak.university.uni2.model.UserRole;
@@ -13,31 +12,24 @@ public class RegisterRequest {
     @NotBlank(message = "Password is required")
     private String password;
     
-    @NotBlank(message = "Email is required")
-    @Email(message = "Email should be valid")
-    private String email;
+    @NotBlank(message = "First name is required")
+    private String firstName;
+    
+    @NotBlank(message = "Last name is required")
+    private String lastName;
     
     @NotNull(message = "Role is required")
     private UserRole role;
     
-    private String indexNumber; // Optional, only for students
-    
     // Constructors
     public RegisterRequest() {}
     
-    public RegisterRequest(String username, String password, String email, UserRole role) {
+    public RegisterRequest(String username, String password, String firstName, String lastName, UserRole role) {
         this.username = username;
         this.password = password;
-        this.email = email;
+        this.firstName = firstName;
+        this.lastName = lastName;
         this.role = role;
-    }
-    
-    public RegisterRequest(String username, String password, String email, UserRole role, String indexNumber) {
-        this.username = username;
-        this.password = password;
-        this.email = email;
-        this.role = role;
-        this.indexNumber = indexNumber;
     }
     
     // Getters and Setters
@@ -57,12 +49,20 @@ public class RegisterRequest {
         this.password = password;
     }
     
-    public String getEmail() {
-        return email;
+    public String getFirstName() {
+        return firstName;
     }
     
-    public void setEmail(String email) {
-        this.email = email;
+    public void setFirstName(String firstName) {
+        this.firstName = firstName;
+    }
+    
+    public String getLastName() {
+        return lastName;
+    }
+    
+    public void setLastName(String lastName) {
+        this.lastName = lastName;
     }
     
     public UserRole getRole() {
@@ -73,21 +73,13 @@ public class RegisterRequest {
         this.role = role;
     }
     
-    public String getIndexNumber() {
-        return indexNumber;
-    }
-    
-    public void setIndexNumber(String indexNumber) {
-        this.indexNumber = indexNumber;
-    }
-    
     @Override
     public String toString() {
         return "RegisterRequest{" +
                 "username='" + username + '\'' +
-                ", email='" + email + '\'' +
+                ", firstName='" + firstName + '\'' +
+                ", lastName='" + lastName + '\'' +
                 ", role=" + role +
-                ", indexNumber='" + indexNumber + '\'' +
                 '}';
     }
 } 

@@ -23,4 +23,28 @@ public interface SubjectRepository extends JpaRepository<Subject, Long> {
      * @return Optional containing the subject if found
      */
     Optional<Subject> findByCode(String code);
+    
+    /**
+     * Find subject by ID and teacher ID
+     * @param id the subject ID
+     * @param teacherId the teacher ID
+     * @return List containing the subject if found and belongs to the teacher
+     */
+    List<Subject> findByIdAndTeacherId(Long id, Long teacherId);
+    
+    /**
+     * Find subject by code and teacher ID
+     * @param code the subject code
+     * @param teacherId the teacher ID
+     * @return List containing the subject if found and belongs to the teacher
+     */
+    List<Subject> findByCodeAndTeacherId(String code, Long teacherId);
+    
+    /**
+     * Find subjects by teacher ID and name with case-insensitive partial matching
+     * @param teacherId the teacher ID
+     * @param name the subject name to search for (partial match)
+     * @return List of subjects that match the criteria
+     */
+    List<Subject> findByTeacherIdAndNameIgnoreCaseContaining(Long teacherId, String name);
 } 

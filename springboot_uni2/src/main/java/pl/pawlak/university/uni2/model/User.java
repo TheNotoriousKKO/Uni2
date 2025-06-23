@@ -18,8 +18,11 @@ public abstract class User {
     @Column(nullable = false)
     private String password;
     
-    @Column(unique = true, nullable = false)
-    private String email;
+    @Column(nullable = false)
+    private String firstName;
+    
+    @Column(nullable = false)
+    private String lastName;
     
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -28,10 +31,11 @@ public abstract class User {
     // Constructors
     public User() {}
     
-    public User(String username, String password, String email, UserRole role) {
+    public User(String username, String password, String firstName, String lastName, UserRole role) {
         this.username = username;
         this.password = password;
-        this.email = email;
+        this.firstName = firstName;
+        this.lastName = lastName;
         this.role = role;
     }
     
@@ -60,12 +64,20 @@ public abstract class User {
         this.password = password;
     }
     
-    public String getEmail() {
-        return email;
+    public String getFirstName() {
+        return firstName;
     }
     
-    public void setEmail(String email) {
-        this.email = email;
+    public void setFirstName(String firstName) {
+        this.firstName = firstName;
+    }
+    
+    public String getLastName() {
+        return lastName;
+    }
+    
+    public void setLastName(String lastName) {
+        this.lastName = lastName;
     }
     
     public UserRole getRole() {
@@ -95,7 +107,8 @@ public abstract class User {
         return "User{" +
                 "id=" + id +
                 ", username='" + username + '\'' +
-                ", email='" + email + '\'' +
+                ", firstName='" + firstName + '\'' +
+                ", lastName='" + lastName + '\'' +
                 ", role=" + role +
                 '}';
     }

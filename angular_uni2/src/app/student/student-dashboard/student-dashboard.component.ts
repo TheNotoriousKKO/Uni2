@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { AuthService } from '../../core/auth.service';
 import { StudentService, Subject, Grade } from '../../core/student.service';
+import { UserService, UserDto } from '../../core/user.service';
 
 @Component({
   selector: 'app-student-dashboard',
@@ -13,7 +14,7 @@ import { StudentService, Subject, Grade } from '../../core/student.service';
       <header class="dashboard-header">
         <h1>Student Dashboard</h1>
         <div class="user-info">
-          <span>Welcome, {{ username }}</span>
+          <span>Welcome, {{ currentUser?.firstName }} {{ currentUser?.lastName }} (ID: {{ currentUser?.id }})</span>
           <button (click)="logout()" class="btn btn-secondary">Logout</button>
         </div>
       </header>
@@ -212,11 +213,17 @@ import { StudentService, Subject, Grade } from '../../core/student.service';
     .data-table th {
       background-color: #f8f9fa;
       font-weight: 600;
-      color: #555;
+      color: #333;
     }
 
     .data-table tr:hover {
       background-color: #f8f9fa;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 2rem;
+      color: #666;
     }
 
     .grade-value {
@@ -226,38 +233,33 @@ import { StudentService, Subject, Grade } from '../../core/student.service';
       font-size: 0.875rem;
     }
 
-    .grade-excellent {
+    .grade-value.excellent {
       background-color: #d4edda;
       color: #155724;
     }
 
-    .grade-good {
+    .grade-value.good {
       background-color: #d1ecf1;
       color: #0c5460;
     }
 
-    .grade-average {
+    .grade-value.average {
       background-color: #fff3cd;
       color: #856404;
     }
 
-    .grade-poor {
+    .grade-value.poor {
       background-color: #f8d7da;
       color: #721c24;
-    }
-
-    .empty-state {
-      text-align: center;
-      padding: 2rem;
-      color: #666;
     }
 
     .btn {
       padding: 0.5rem 1rem;
       border: none;
       border-radius: 4px;
-      cursor: pointer;
       font-size: 0.875rem;
+      font-weight: 500;
+      cursor: pointer;
       transition: background-color 0.3s;
     }
 
@@ -276,7 +278,7 @@ import { StudentService, Subject, Grade } from '../../core/student.service';
     }
 
     .btn-secondary:hover {
-      background-color: #5a6268;
+      background-color: #545b62;
     }
 
     @media (max-width: 768px) {
@@ -299,7 +301,7 @@ import { StudentService, Subject, Grade } from '../../core/student.service';
   `]
 })
 export class StudentDashboardComponent implements OnInit {
-  username: string | null = null;
+  currentUser: UserDto | null = null;
   subjects: Subject[] = [];
   grades: Grade[] = [];
   isLoading = false;
@@ -308,13 +310,26 @@ export class StudentDashboardComponent implements OnInit {
   constructor(
     private authService: AuthService,
     private studentService: StudentService,
+    private userService: UserService,
     private router: Router
   ) {
-    this.username = this.authService.getUsernameFromToken();
   }
 
   ngOnInit(): void {
+    this.loadUserData();
     this.loadData();
+  }
+
+  loadUserData(): void {
+    this.userService.getCurrentUser().subscribe({
+      next: (user) => {
+        this.currentUser = user;
+      },
+      error: (error) => {
+        console.error('Error loading user data:', error);
+        this.errorMessage = 'Failed to load user information';
+      }
+    });
   }
 
   loadData(): void {
@@ -330,8 +345,9 @@ export class StudentDashboardComponent implements OnInit {
       this.grades = grades || [];
       this.isLoading = false;
     }).catch(error => {
+      console.error('Error loading data:', error);
+      this.errorMessage = 'Failed to load data. Please try again.';
       this.isLoading = false;
-      this.errorMessage = error.error?.message || 'Failed to load data. Please try again.';
     });
   }
 
@@ -341,17 +357,13 @@ export class StudentDashboardComponent implements OnInit {
   }
 
   getGradeClass(value: number): string {
-    if (value >= 5.5) return 'grade-excellent';
-    if (value >= 4.5) return 'grade-good';
-    if (value >= 3.5) return 'grade-average';
-    return 'grade-poor';
+    if (value >= 5.0) return 'excellent';
+    if (value >= 4.0) return 'good';
+    if (value >= 3.0) return 'average';
+    return 'poor';
   }
 
   formatDate(dateString: string): string {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    });
+    return new Date(dateString).toLocaleDateString();
   }
 } 

@@ -13,9 +13,6 @@ public class Student {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     
-    @Column(unique = true, nullable = false)
-    private String indexNumber;
-    
     @OneToOne(cascade = CascadeType.ALL)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
@@ -34,8 +31,7 @@ public class Student {
     // Constructors
     public Student() {}
     
-    public Student(String indexNumber, User user) {
-        this.indexNumber = indexNumber;
+    public Student(User user) {
         this.user = user;
     }
     
@@ -46,14 +42,6 @@ public class Student {
     
     public void setId(Long id) {
         this.id = id;
-    }
-    
-    public String getIndexNumber() {
-        return indexNumber;
-    }
-    
-    public void setIndexNumber(String indexNumber) {
-        this.indexNumber = indexNumber;
     }
     
     public User getUser() {
@@ -105,19 +93,18 @@ public class Student {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         Student student = (Student) o;
-        return Objects.equals(id, student.id) && Objects.equals(indexNumber, student.indexNumber);
+        return Objects.equals(id, student.id);
     }
     
     @Override
     public int hashCode() {
-        return Objects.hash(id, indexNumber);
+        return Objects.hash(id);
     }
     
     @Override
     public String toString() {
         return "Student{" +
                 "id=" + id +
-                ", indexNumber='" + indexNumber + '\'' +
                 ", user=" + user +
                 '}';
     }

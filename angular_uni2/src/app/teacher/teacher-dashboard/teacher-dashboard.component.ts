@@ -3,7 +3,8 @@ import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from '../../core/auth.service';
-import { TeacherService, CreateSubjectRequest, CreateGradeRequest } from '../../core/teacher.service';
+import { TeacherService, CreateSubjectRequest, CreateGradeRequest, Subject, Student } from '../../core/teacher.service';
+import { UserService, UserDto } from '../../core/user.service';
 
 @Component({
   selector: 'app-teacher-dashboard',
@@ -14,7 +15,7 @@ import { TeacherService, CreateSubjectRequest, CreateGradeRequest } from '../../
       <header class="dashboard-header">
         <h1>Teacher Dashboard</h1>
         <div class="user-info">
-          <span>Welcome, {{ username }}</span>
+          <span>Welcome, {{ currentUser?.firstName }} {{ currentUser?.lastName }} (ID: {{ currentUser?.id }})</span>
           <button (click)="logout()" class="btn btn-secondary">Logout</button>
         </div>
       </header>
@@ -144,6 +145,158 @@ import { TeacherService, CreateSubjectRequest, CreateGradeRequest } from '../../
           </div>
         </div>
 
+        <!-- Subject Search and Enrollment Management -->
+        <div class="dashboard-card enrollment-card">
+          <h2>Student Enrollment Management</h2>
+          
+          <!-- Subject Search -->
+          <div class="search-section">
+            <h3>Search Subjects</h3>
+            <form [formGroup]="searchForm" (ngSubmit)="searchSubjects()">
+              <div class="search-inputs">
+                <div class="form-group">
+                  <label for="searchSubjectId">Subject ID</label>
+                  <input 
+                    type="number" 
+                    id="searchSubjectId" 
+                    formControlName="subjectId" 
+                    class="form-control"
+                    placeholder="Enter subject ID"
+                  >
+                </div>
+                <div class="form-group">
+                  <label for="searchSubjectCode">Subject Code</label>
+                  <input 
+                    type="text" 
+                    id="searchSubjectCode" 
+                    formControlName="subjectCode" 
+                    class="form-control"
+                    placeholder="Enter subject code"
+                  >
+                </div>
+                <div class="form-group">
+                  <label for="searchSubjectName">Subject Name</label>
+                  <input 
+                    type="text" 
+                    id="searchSubjectName" 
+                    formControlName="subjectName" 
+                    class="form-control"
+                    placeholder="Enter subject name (partial match)"
+                  >
+                </div>
+                <button type="submit" class="btn btn-primary" [disabled]="isSearching">
+                  {{ isSearching ? 'Searching...' : 'Search' }}
+                </button>
+              </div>
+            </form>
+          </div>
+
+          <!-- Search Results -->
+          <div class="search-results" *ngIf="searchResults.length > 0">
+            <h3>Search Results</h3>
+            <div class="table-container">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>Code</th>
+                    <th>Name</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let subject of searchResults">
+                    <td>{{ subject.id }}</td>
+                    <td>{{ subject.code }}</td>
+                    <td>{{ subject.name }}</td>
+                    <td>
+                      <button (click)="selectSubject(subject)" class="btn btn-secondary btn-sm">
+                        Select
+                      </button>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Selected Subject and Student Management -->
+          <div class="selected-subject" *ngIf="selectedSubject">
+            <h3>Managing: {{ selectedSubject.name }} ({{ selectedSubject.code }})</h3>
+            
+            <!-- Enroll Student Form -->
+            <div class="enroll-section">
+              <h4>Enroll New Student</h4>
+              <form [formGroup]="enrollForm" (ngSubmit)="enrollStudent()">
+                <div class="enroll-inputs">
+                  <div class="form-group">
+                    <label for="enrollStudentId">Student ID</label>
+                    <input 
+                      type="number" 
+                      id="enrollStudentId" 
+                      formControlName="studentId" 
+                      class="form-control"
+                      [class.error]="isFieldInvalid('enrollStudentId')"
+                      placeholder="Enter student ID"
+                    >
+                    <div class="error-message" *ngIf="isFieldInvalid('enrollStudentId')">
+                      Student ID is required
+                    </div>
+                  </div>
+                  <button type="submit" class="btn btn-primary" [disabled]="enrollForm.invalid || isEnrolling">
+                    {{ isEnrolling ? 'Enrolling...' : 'Enroll' }}
+                  </button>
+                </div>
+              </form>
+            </div>
+
+            <!-- Enrolled Students List -->
+            <div class="enrolled-students">
+              <h4>Enrolled Students</h4>
+              <div class="loading-container" *ngIf="isLoadingStudents">
+                <div class="loading-spinner"></div>
+                <p>Loading students...</p>
+              </div>
+              
+              <div class="table-container" *ngIf="!isLoadingStudents">
+                <table class="data-table" *ngIf="enrolledStudents.length > 0">
+                  <thead>
+                    <tr>
+                      <th>ID</th>
+                      <th>Name</th>
+                      <th>Username</th>
+                      <th>Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr *ngFor="let student of enrolledStudents">
+                      <td>{{ student.id }}</td>
+                      <td>{{ student.firstName }} {{ student.lastName }}</td>
+                      <td>{{ student.username }}</td>
+                      <td>
+                        <button (click)="removeStudent(student.id)" class="btn btn-danger btn-sm" [disabled]="isRemovingStudent === student.id">
+                          {{ isRemovingStudent === student.id ? 'Removing...' : 'Remove' }}
+                        </button>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+                <div class="empty-state" *ngIf="enrolledStudents.length === 0">
+                  <p>No students enrolled in this subject.</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="error-message" *ngIf="enrollmentError">
+              {{ enrollmentError }}
+            </div>
+
+            <div class="success-message" *ngIf="enrollmentSuccess">
+              {{ enrollmentSuccess }}
+            </div>
+          </div>
+        </div>
+
         <!-- Instructions Card -->
         <div class="dashboard-card instructions-card">
           <h2>Instructions</h2>
@@ -163,6 +316,16 @@ import { TeacherService, CreateSubjectRequest, CreateGradeRequest } from '../../
                 <li>Enter the subject ID you want to grade</li>
                 <li>Grade values range from 1.0 to 6.0</li>
                 <li>Students must be enrolled in the subject to receive grades</li>
+              </ul>
+            </div>
+            <div class="instruction-section">
+              <h3>Managing Enrollment</h3>
+              <ul>
+                <li>Search for subjects by ID, code, or name</li>
+                <li>Name search supports partial matching (e.g., "math" finds "Advanced Mathematics")</li>
+                <li>Select a subject to manage its enrollment</li>
+                <li>Enroll students by entering their ID</li>
+                <li>Remove students using the Remove button</li>
               </ul>
             </div>
           </div>
@@ -219,6 +382,11 @@ import { TeacherService, CreateSubjectRequest, CreateGradeRequest } from '../../
       box-shadow: 0 2px 10px rgba(0,0,0,0.1);
     }
 
+    .enrollment-card {
+      max-width: 1200px;
+      margin: 0 auto 2rem auto;
+    }
+
     .dashboard-card h2 {
       color: #333;
       margin-bottom: 1.5rem;
@@ -244,7 +412,6 @@ import { TeacherService, CreateSubjectRequest, CreateGradeRequest } from '../../
       border-radius: 4px;
       font-size: 1rem;
       transition: border-color 0.3s;
-      box-sizing: border-box;
     }
 
     .form-control:focus {
@@ -274,7 +441,6 @@ import { TeacherService, CreateSubjectRequest, CreateGradeRequest } from '../../
     }
 
     .btn {
-      width: 100%;
       padding: 0.75rem;
       border: none;
       border-radius: 4px;
@@ -282,7 +448,6 @@ import { TeacherService, CreateSubjectRequest, CreateGradeRequest } from '../../
       font-weight: 500;
       cursor: pointer;
       transition: background-color 0.3s;
-      margin-top: 1rem;
     }
 
     .btn-primary {
@@ -305,7 +470,138 @@ import { TeacherService, CreateSubjectRequest, CreateGradeRequest } from '../../
     }
 
     .btn-secondary:hover {
-      background-color: #5a6268;
+      background-color: #545b62;
+    }
+
+    .btn-danger {
+      background-color: #dc3545;
+      color: white;
+    }
+
+    .btn-danger:hover:not(:disabled) {
+      background-color: #c82333;
+    }
+
+    .btn-sm {
+      padding: 0.5rem 0.75rem;
+      font-size: 0.875rem;
+    }
+
+    .search-section {
+      margin-bottom: 2rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid #eee;
+    }
+
+    .search-section h3 {
+      color: #333;
+      margin-bottom: 1rem;
+    }
+
+    .search-inputs {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr auto;
+      gap: 1rem;
+      align-items: end;
+    }
+
+    .search-results {
+      margin-bottom: 2rem;
+    }
+
+    .search-results h3 {
+      color: #333;
+      margin-bottom: 1rem;
+    }
+
+    .selected-subject {
+      margin-top: 2rem;
+      padding-top: 1rem;
+      border-top: 1px solid #eee;
+    }
+
+    .selected-subject h3 {
+      color: #333;
+      margin-bottom: 1.5rem;
+    }
+
+    .enroll-section {
+      margin-bottom: 2rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid #eee;
+    }
+
+    .enroll-section h4 {
+      color: #333;
+      margin-bottom: 1rem;
+    }
+
+    .enroll-inputs {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 1rem;
+      align-items: end;
+    }
+
+    .enrolled-students h4 {
+      color: #333;
+      margin-bottom: 1rem;
+    }
+
+    .table-container {
+      overflow-x: auto;
+    }
+
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 1rem;
+    }
+
+    .data-table th,
+    .data-table td {
+      padding: 0.75rem;
+      text-align: left;
+      border-bottom: 1px solid #eee;
+    }
+
+    .data-table th {
+      background-color: #f8f9fa;
+      font-weight: 600;
+      color: #333;
+    }
+
+    .data-table tr:hover {
+      background-color: #f8f9fa;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 2rem;
+      color: #666;
+    }
+
+    .loading-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 200px;
+      gap: 1rem;
+    }
+
+    .loading-spinner {
+      width: 40px;
+      height: 40px;
+      border: 4px solid #f3f3f3;
+      border-top: 4px solid #007bff;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
     }
 
     .instructions-card {
@@ -315,14 +611,13 @@ import { TeacherService, CreateSubjectRequest, CreateGradeRequest } from '../../
 
     .instructions-content {
       display: grid;
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: 1fr 1fr 1fr;
       gap: 2rem;
     }
 
     .instruction-section h3 {
       color: #333;
       margin-bottom: 1rem;
-      font-size: 1.1rem;
     }
 
     .instruction-section ul {
@@ -332,21 +627,33 @@ import { TeacherService, CreateSubjectRequest, CreateGradeRequest } from '../../
 
     .instruction-section li {
       padding: 0.5rem 0;
+      border-bottom: 1px solid #eee;
       color: #666;
-      position: relative;
-      padding-left: 1.5rem;
+    }
+
+    .instruction-section li:last-child {
+      border-bottom: none;
     }
 
     .instruction-section li:before {
       content: "•";
       color: #007bff;
       font-weight: bold;
-      position: absolute;
-      left: 0;
+      margin-right: 0.5rem;
     }
 
     @media (max-width: 768px) {
       .dashboard-grid {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+      }
+
+      .search-inputs {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+      }
+
+      .enroll-inputs {
         grid-template-columns: 1fr;
         gap: 1rem;
       }
@@ -370,24 +677,40 @@ import { TeacherService, CreateSubjectRequest, CreateGradeRequest } from '../../
   `]
 })
 export class TeacherDashboardComponent implements OnInit {
-  username: string | null = null;
+  currentUser: UserDto | null = null;
   subjectForm: FormGroup;
   gradeForm: FormGroup;
+  searchForm: FormGroup;
+  enrollForm: FormGroup;
+  
+  // Subject management
+  searchResults: Subject[] = [];
+  selectedSubject: Subject | null = null;
+  enrolledStudents: Student[] = [];
+  
+  // Loading states
   isCreatingSubject = false;
   isAssigningGrade = false;
+  isSearching = false;
+  isEnrolling = false;
+  isLoadingStudents = false;
+  isRemovingStudent: number | null = null;
+  
+  // Messages
   subjectError = '';
   subjectSuccess = '';
   gradeError = '';
   gradeSuccess = '';
+  enrollmentError = '';
+  enrollmentSuccess = '';
 
   constructor(
     private authService: AuthService,
     private teacherService: TeacherService,
+    private userService: UserService,
     private fb: FormBuilder,
     private router: Router
   ) {
-    this.username = this.authService.getUsernameFromToken();
-    
     this.subjectForm = this.fb.group({
       name: ['', [Validators.required]],
       code: ['', [Validators.required]]
@@ -398,10 +721,31 @@ export class TeacherDashboardComponent implements OnInit {
       subjectId: ['', [Validators.required, Validators.min(1)]],
       value: ['', [Validators.required, Validators.min(1.0), Validators.max(6.0)]]
     });
+
+    this.searchForm = this.fb.group({
+      subjectId: [''],
+      subjectCode: [''],
+      subjectName: ['']
+    });
+
+    this.enrollForm = this.fb.group({
+      studentId: ['', [Validators.required, Validators.min(1)]]
+    });
   }
 
   ngOnInit(): void {
-    // Component initialization
+    this.loadUserData();
+  }
+
+  loadUserData(): void {
+    this.userService.getCurrentUser().subscribe({
+      next: (user) => {
+        this.currentUser = user;
+      },
+      error: (error) => {
+        console.error('Error loading user data:', error);
+      }
+    });
   }
 
   createSubject(): void {
@@ -416,15 +760,10 @@ export class TeacherDashboardComponent implements OnInit {
     const request: CreateSubjectRequest = this.subjectForm.value;
 
     this.teacherService.createSubject(request).subscribe({
-      next: (subject) => {
+      next: (response) => {
         this.isCreatingSubject = false;
-        this.subjectSuccess = `Subject "${subject.name}" (${subject.code}) created successfully!`;
+        this.subjectSuccess = 'Subject created successfully!';
         this.subjectForm.reset();
-        
-        // Clear success message after 3 seconds
-        setTimeout(() => {
-          this.subjectSuccess = '';
-        }, 3000);
       },
       error: (error) => {
         this.isCreatingSubject = false;
@@ -442,22 +781,13 @@ export class TeacherDashboardComponent implements OnInit {
     this.gradeError = '';
     this.gradeSuccess = '';
 
-    const request: CreateGradeRequest = {
-      studentId: this.gradeForm.value.studentId,
-      subjectId: this.gradeForm.value.subjectId,
-      value: this.gradeForm.value.value
-    };
+    const request: CreateGradeRequest = this.gradeForm.value;
 
     this.teacherService.assignGrade(request).subscribe({
-      next: (grade) => {
+      next: (response) => {
         this.isAssigningGrade = false;
-        this.gradeSuccess = `Grade ${grade.value} assigned successfully!`;
+        this.gradeSuccess = 'Grade assigned successfully!';
         this.gradeForm.reset();
-        
-        // Clear success message after 3 seconds
-        setTimeout(() => {
-          this.gradeSuccess = '';
-        }, 3000);
       },
       error: (error) => {
         this.isAssigningGrade = false;
@@ -466,13 +796,120 @@ export class TeacherDashboardComponent implements OnInit {
     });
   }
 
+  searchSubjects(): void {
+    const formValue = this.searchForm.value;
+    const query: any = {};
+    
+    if (formValue.subjectId) {
+      query.id = formValue.subjectId;
+    } else if (formValue.subjectCode) {
+      query.code = formValue.subjectCode;
+    } else if (formValue.subjectName) {
+      query.name = formValue.subjectName;
+    } else {
+      // If no search criteria, show all subjects
+      query.code = '';
+    }
+
+    this.isSearching = true;
+    this.searchResults = [];
+
+    this.teacherService.searchSubjects(query).subscribe({
+      next: (subjects) => {
+        this.isSearching = false;
+        this.searchResults = subjects;
+      },
+      error: (error) => {
+        this.isSearching = false;
+        console.error('Error searching subjects:', error);
+        this.enrollmentError = 'Failed to search subjects. Please try again.';
+      }
+    });
+  }
+
+  selectSubject(subject: Subject): void {
+    this.selectedSubject = subject;
+    this.loadEnrolledStudents();
+    this.clearEnrollmentMessages();
+  }
+
+  loadEnrolledStudents(): void {
+    if (!this.selectedSubject) return;
+
+    this.isLoadingStudents = true;
+    this.enrolledStudents = [];
+
+    this.teacherService.getEnrolledStudents(this.selectedSubject.id).subscribe({
+      next: (students) => {
+        this.isLoadingStudents = false;
+        this.enrolledStudents = students;
+      },
+      error: (error) => {
+        this.isLoadingStudents = false;
+        console.error('Error loading enrolled students:', error);
+        this.enrollmentError = 'Failed to load enrolled students. Please try again.';
+      }
+    });
+  }
+
+  enrollStudent(): void {
+    if (this.enrollForm.invalid || !this.selectedSubject) {
+      return;
+    }
+
+    this.isEnrolling = true;
+    this.clearEnrollmentMessages();
+
+    const studentId = this.enrollForm.get('studentId')?.value;
+
+    this.teacherService.enrollStudent(this.selectedSubject.id, studentId).subscribe({
+      next: () => {
+        this.isEnrolling = false;
+        this.enrollmentSuccess = 'Student enrolled successfully!';
+        this.enrollForm.reset();
+        this.loadEnrolledStudents(); // Refresh the list
+      },
+      error: (error) => {
+        this.isEnrolling = false;
+        this.enrollmentError = error.error?.message || 'Failed to enroll student. Please try again.';
+      }
+    });
+  }
+
+  removeStudent(studentId: number): void {
+    if (!this.selectedSubject) return;
+
+    this.isRemovingStudent = studentId;
+    this.clearEnrollmentMessages();
+
+    this.teacherService.removeStudent(this.selectedSubject.id, studentId).subscribe({
+      next: () => {
+        this.isRemovingStudent = null;
+        this.enrollmentSuccess = 'Student removed successfully!';
+        this.loadEnrolledStudents(); // Refresh the list
+      },
+      error: (error) => {
+        this.isRemovingStudent = null;
+        this.enrollmentError = error.error?.message || 'Failed to remove student. Please try again.';
+      }
+    });
+  }
+
+  clearEnrollmentMessages(): void {
+    this.enrollmentError = '';
+    this.enrollmentSuccess = '';
+  }
+
   logout(): void {
     this.authService.logout();
     this.router.navigate(['/login']);
   }
 
   isFieldInvalid(fieldName: string): boolean {
-    const field = this.subjectForm.get(fieldName) || this.gradeForm.get(fieldName);
-    return field ? field.invalid && (field.dirty || field.touched) : false;
+    const control = this.subjectForm.get(fieldName) || 
+                   this.gradeForm.get(fieldName) || 
+                   this.searchForm.get(fieldName) || 
+                   this.enrollForm.get(fieldName);
+    return !!(control && control.invalid && (control.dirty || control.touched));
   }
 } 

@@ -3,18 +3,18 @@ package pl.pawlak.university.uni2.dto;
 public class StudentDto {
     
     private Long id;
-    private String indexNumber;
     private String username;
-    private String email;
+    private String firstName;
+    private String lastName;
     
     // Constructors
     public StudentDto() {}
     
-    public StudentDto(Long id, String indexNumber, String username, String email) {
+    public StudentDto(Long id, String username, String firstName, String lastName) {
         this.id = id;
-        this.indexNumber = indexNumber;
         this.username = username;
-        this.email = email;
+        this.firstName = firstName;
+        this.lastName = lastName;
     }
     
     // Getters and Setters
@@ -26,14 +26,6 @@ public class StudentDto {
         this.id = id;
     }
     
-    public String getIndexNumber() {
-        return indexNumber;
-    }
-    
-    public void setIndexNumber(String indexNumber) {
-        this.indexNumber = indexNumber;
-    }
-    
     public String getUsername() {
         return username;
     }
@@ -42,21 +34,29 @@ public class StudentDto {
         this.username = username;
     }
     
-    public String getEmail() {
-        return email;
+    public String getFirstName() {
+        return firstName;
     }
     
-    public void setEmail(String email) {
-        this.email = email;
+    public void setFirstName(String firstName) {
+        this.firstName = firstName;
+    }
+    
+    public String getLastName() {
+        return lastName;
+    }
+    
+    public void setLastName(String lastName) {
+        this.lastName = lastName;
     }
     
     @Override
     public String toString() {
         return "StudentDto{" +
                 "id=" + id +
-                ", indexNumber='" + indexNumber + '\'' +
                 ", username='" + username + '\'' +
-                ", email='" + email + '\'' +
+                ", firstName='" + firstName + '\'' +
+                ", lastName='" + lastName + '\'' +
                 '}';
     }
 } 

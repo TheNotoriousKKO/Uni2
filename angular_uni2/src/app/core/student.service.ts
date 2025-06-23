@@ -9,7 +9,8 @@ export interface Subject {
   teacher?: {
     id: number;
     username: string;
-    email: string;
+    firstName: string;
+    lastName: string;
   };
 }
 
@@ -24,9 +25,9 @@ export interface Grade {
   };
   student?: {
     id: number;
-    indexNumber: string;
     username: string;
-    email: string;
+    firstName: string;
+    lastName: string;
   };
 }
 

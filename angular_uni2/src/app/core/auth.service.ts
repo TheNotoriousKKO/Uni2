@@ -11,9 +11,9 @@ export interface LoginCredentials {
 export interface RegisterRequest {
   username: string;
   password: string;
-  email: string;
+  firstName: string;
+  lastName: string;
   role: 'STUDENT' | 'TEACHER';
-  indexNumber?: string;
 }
 
 export interface AuthResponse {

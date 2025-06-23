@@ -78,7 +78,8 @@ public class StudentController {
             TeacherDto teacherDto = new TeacherDto(
                     subject.getTeacher().getId(),
                     subject.getTeacher().getUser().getUsername(),
-                    subject.getTeacher().getUser().getEmail()
+                    subject.getTeacher().getUser().getFirstName(),
+                    subject.getTeacher().getUser().getLastName()
             );
             dto.setTeacher(teacherDto);
         }
@@ -97,9 +98,9 @@ public class StudentController {
         if (grade.getStudent() != null) {
             StudentDto studentDto = new StudentDto(
                     grade.getStudent().getId(),
-                    grade.getStudent().getIndexNumber(),
                     grade.getStudent().getUser().getUsername(),
-                    grade.getStudent().getUser().getEmail()
+                    grade.getStudent().getUser().getFirstName(),
+                    grade.getStudent().getUser().getLastName()
             );
             dto.setStudent(studentDto);
         }

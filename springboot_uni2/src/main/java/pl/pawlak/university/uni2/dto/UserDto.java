@@ -1,20 +1,24 @@
 package pl.pawlak.university.uni2.dto;
 
-public class TeacherDto {
+import pl.pawlak.university.uni2.model.UserRole;
+
+public class UserDto {
     
     private Long id;
     private String username;
     private String firstName;
     private String lastName;
+    private UserRole role;
     
     // Constructors
-    public TeacherDto() {}
+    public UserDto() {}
     
-    public TeacherDto(Long id, String username, String firstName, String lastName) {
+    public UserDto(Long id, String username, String firstName, String lastName, UserRole role) {
         this.id = id;
         this.username = username;
         this.firstName = firstName;
         this.lastName = lastName;
+        this.role = role;
     }
     
     // Getters and Setters
@@ -50,13 +54,22 @@ public class TeacherDto {
         this.lastName = lastName;
     }
     
+    public UserRole getRole() {
+        return role;
+    }
+    
+    public void setRole(UserRole role) {
+        this.role = role;
+    }
+    
     @Override
     public String toString() {
-        return "TeacherDto{" +
+        return "UserDto{" +
                 "id=" + id +
                 ", username='" + username + '\'' +
                 ", firstName='" + firstName + '\'' +
                 ", lastName='" + lastName + '\'' +
+                ", role=" + role +
                 '}';
     }
 } 

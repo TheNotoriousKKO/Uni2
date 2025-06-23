@@ -2,10 +2,13 @@ package pl.pawlak.university.uni2.auth;
 
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import pl.pawlak.university.uni2.dto.UserDto;
 import pl.pawlak.university.uni2.dto.auth.AuthResponse;
 import pl.pawlak.university.uni2.dto.auth.LoginRequest;
 import pl.pawlak.university.uni2.dto.auth.RegisterRequest;
@@ -30,5 +33,11 @@ public class AuthController {
     public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest request) {
         AuthResponse response = authService.login(request);
         return ResponseEntity.ok(response);
+    }
+    
+    @GetMapping("/me")
+    public ResponseEntity<UserDto> getCurrentUser(Authentication auth) {
+        UserDto userDto = authService.getCurrentUser(auth.getName());
+        return ResponseEntity.ok(userDto);
     }
 } 
